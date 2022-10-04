@@ -5,7 +5,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <myio.h> 
+#include "myio.h"
 
 #include <fcntl.h> 
 
@@ -13,7 +13,7 @@
 
 int main(int argc, char *argv[])
 {
-    printf("TESTING"); 
+    printf("TESTING \n"); 
     return 0; 
 }
 
