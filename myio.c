@@ -96,7 +96,7 @@ int myread(struct File *filePtr, void *buf, size_t count)
             return 0;
         }
     }
-    else if((BUFF_SIZE - filePtr->cp) < count){
+    else if((BUFF_SIZE - (size_t) filePtr->cp) < count){
         /*
         memcopy give the rest and read again
         */
