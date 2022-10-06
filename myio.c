@@ -12,11 +12,14 @@
 #include <fcntl.h> 
 
 #define BUFF_SIZE 5
-
+/*
+ buf_size and struct file should be in the header
+*/
 struct File
 {
     int fd;
-    void *fileBuf, *cp;
+    char *cp;
+    char fileBuf[BUFF_SIZE];
     int flags;
 
 };
@@ -24,9 +27,14 @@ struct File
 int main(int argc, char *argv[])
 {
     struct File *filePtr;
+    char * buf;
 
-    filePtr = myopen("/home/lschweitzer/CS315/assignment2/testfile",O_RDWR);
+    buf = malloc(10);
+    filePtr = myopen("testfile",O_RDWR);
     printf("fd is %d buf pointer value is %p and cp pointer value is %p \n",filePtr->fd, filePtr->fileBuf, filePtr->cp);
+    myread(filePtr, buf, 10);
+
+    printf("this is whats in the buf: %s\n", buf); 
 
     return 0; 
 }
@@ -44,11 +52,17 @@ struct File * myopen(const char *pathname, int flags)
     if(fd == -1)
     {
         perror("open");
+        return NULL;
     }
 
     filePtr = malloc(sizeof(struct File));
+    
+    if(filePtr == NULL)
+    {
+        return NULL;
+    }
+
     filePtr->fd = fd;
-    filePtr->fileBuf = malloc(BUFF_SIZE);
     filePtr->cp = filePtr->fileBuf;
     filePtr->flags = flags;
 
@@ -66,44 +80,93 @@ int myclose(int fd)
 /*
 * Reads count bytes from fd into the buf and returns the amount of bytes read
 */
-int myread(struct File *filePtr, void *buf, size_t count) 
+int myread(struct File *filePtr, char *buf, size_t count) 
 { 
     int flagRead, bytesRead;
+    size_t bytesLeft;
+
+    bytesLeft = BUFF_SIZE - ((filePtr->cp) - (filePtr->fileBuf));
 
     flagRead = 0;
 
-    if(((filePtr->flags & O_RDONLY) != 0) | ((filePtr->flags & O_RDWR) != 0))
+    if(((filePtr->flags & O_RDONLY) != 0) || ((filePtr->flags & O_RDWR) != 0))
     {
+        printf("CAN READ\n"); 
         flagRead = 1;
     }
 
     if(flagRead == 0)
     {
+        printf("CANNOT READ\n"); 
         return 0;
     }
 
-    if(filePtr->fileBuf == filePtr->cp)
+    while(count > 0)
     {
-        bytesRead = read(filePtr->fd, filePtr->fileBuf, count);
-        if(bytesRead == -1)
+        if(filePtr->fileBuf == filePtr->cp)
         {
-            perror("read");
+            printf("SYSCALL READ\n"); 
+            bytesRead = read(filePtr->fd, filePtr->fileBuf, count);
+            if(bytesRead == -1)
+            {
+                perror("read");
+                return -1;
+            }
+            else if(bytesRead == 0)
+            {
+                printf("End of file\n");
+                return 0;
+            }
+        }
+
+        if(bytesLeft < count)
+        {
+            if(memcpy(buf, filePtr->cp, bytesLeft) == NULL)
+            {
+                printf("MEMCPY NULL (1)\n"); 
+                return -1;
+            }
+            count = count - bytesLeft;
+            buf += bytesLeft;
+
+            bytesRead = read(filePtr->fd, filePtr->fileBuf, count);
+            if(bytesRead == -1)
+            {
+                perror("read");
+                return -1;
+            }
+            else if(bytesRead == 0)
+            {
+                printf("End of file\n");
+                return 0;
+            }
+            filePtr->cp = filePtr->fileBuf;
+        }
+        
+        printf("MEMCPY-ING\n"); 
+
+        if(memcpy(buf, filePtr->cp, count) == NULL)
+        {
+            printf("MEMCPY NULL (2)\n"); 
             return -1;
         }
-        else if(bytesRead == 0)
+        if(count < BUFF_SIZE)
         {
-            printf("End of file\n");
-            return 0;
+            printf("COUNT < BUFF_SIZE\n"); 
+            filePtr->cp += count;
         }
+        else
+        {
+            printf("ADDED BUFF SIZE"); 
+            filePtr->cp += BUFF_SIZE;
+        }
+
+        printf("count= %ld\n", count);
+        count -= BUFF_SIZE;
     }
-    else if((BUFF_SIZE - (size_t) filePtr->cp) < count){
-        /*
-        memcopy give the rest and read again
-        */
-    }
+
     return 0; 
 }
-
 /*
 * Writes count bytes from buf into the fd 
 */
