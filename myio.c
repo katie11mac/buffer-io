@@ -28,13 +28,14 @@ int main(int argc, char *argv[])
 {
     struct File *filePtr;
     char * buf;
+    int results; 
 
-    buf = malloc(10); /*TRY IT WITH A LARGER NUMBER THAT MAKES IT GO THROUGH THE WHILE LOOP (ie. 15)*/
+    buf = malloc(30); 
     filePtr = myopen("testfile",O_RDWR);
     printf("fd is %d buf pointer value is %p and cp pointer value is %p \n",filePtr->fd, filePtr->fileBuf, filePtr->cp);
-    myread(filePtr, buf, 10); /*if change malloc size remember to change third argument as well*/
-
-    printf("***this is whats in the buf: %s***\n", buf); 
+    results = myread(filePtr, buf, 15); // NEED TO TEST IT OUT WHEN YOU REQUEST MORE BYTES THAN THE FILE HAS 
+    printf("***this is whats in the buf at %p: %s***\n", buf, buf); 
+    printf("bytes read: %d\n\n", results); 
 
     return 0; 
 }
@@ -63,7 +64,7 @@ struct File * myopen(const char *pathname, int flags)
     }
 
     filePtr->fd = fd;
-    filePtr->cp = filePtr->fileBuf;
+    //filePtr->cp = filePtr->fileBuf; 
     filePtr->flags = flags;
 
     return filePtr; 
@@ -79,13 +80,17 @@ int myclose(int fd)
 
 /*
 * Reads count bytes from fd into the buf and returns the amount of bytes read
+*
+* NEED TO MAKE SURE WE DON'T READ MORE BYTES THAN WHAT THE FILE CONTAINS 
 */
 int myread(struct File *filePtr, char *buf, size_t count)
 { 
     int flagRead, bytesRead;
-    size_t bytesLeft;
+    size_t bytesLeft, originalCount;
+    originalCount = count; 
 
-    bytesLeft = BUFF_SIZE - ((filePtr->cp) - (filePtr->fileBuf));
+    /*bytesLeft = BUFF_SIZE - ((filePtr->cp) - (filePtr->fileBuf));*/
+    // COMMENTED OUT CODE ABOVE BC filePtr->cp is initially null
 
     flagRead = 0;
 
@@ -105,14 +110,17 @@ int myread(struct File *filePtr, char *buf, size_t count)
 
     while(count > 0)
     {
-        /*CASE 1: File buf is empty*/
-        if(filePtr->fileBuf == filePtr->cp)
+        /*CASE 1: File buf is empty, 
+        changed the check because when it refills the cp and bp will be in the same place*/
+        if(filePtr->cp == NULL)
         {
             printf("\nFILLING IN FILE BUF\n"); 
             bytesRead = read(filePtr->fd, filePtr->fileBuf, BUFF_SIZE); 
             /*original value of third argument: count, would still store that amount of bytes in the File buf even though the size was smaller*/
             printf("\tRead %d bytes\n", bytesRead); 
             printf("\tFile buf value: \'%s\'\n", filePtr->fileBuf); 
+            filePtr->cp = filePtr->fileBuf;
+            //bytesLeft = BUFF_SIZE - ((filePtr->cp) - (filePtr->fileBuf));
             if(bytesRead == -1)
             {
                 perror("read");
@@ -125,6 +133,9 @@ int myread(struct File *filePtr, char *buf, size_t count)
             }
         }
 
+        bytesLeft = BUFF_SIZE - ((filePtr->cp) - (filePtr->fileBuf)); 
+        // MOVED THIS HERE BC filePtr->cp WOULD NO LONGER BE NULL 
+
         /*CASE 2: User requests more bytes than what is left in the File buf*/
         if(bytesLeft < count)
         {
@@ -134,11 +145,10 @@ int myread(struct File *filePtr, char *buf, size_t count)
                 printf("MEMCPY NULL (1)\n"); 
                 return -1;
             }
-            printf("\tCurrent User Buf Value: %s\n", buf); 
+            printf("\tCurrent User Buf Value (from %p): %s\n", buf, buf); 
             count = count - bytesLeft;
             buf += bytesLeft; /*change where we are writing to in the user's buf*/
             printf("\tupdated buf: %p \tupdated count: %ld\n", buf, count); 
-
             printf("\tREFILL FILE BUFF\n"); 
             bytesRead = read(filePtr->fd, filePtr->fileBuf, BUFF_SIZE);
             /*original value of third argument: count, would still store that amount of bytes in the File buf even though the size was smaller*/
@@ -158,32 +168,53 @@ int myread(struct File *filePtr, char *buf, size_t count)
             printf("\t \n"); 
         }
         
-        printf("PROVIDE USER WITH CONTENTS THAT ARE IN FILE BUF (MEMCPY-ING)\n"); 
-        /*CASE 3: Can provide the bytes that are left in the File buf*/
-        /*NEED TO LOOK OVER THIS PART, SHOULD IT BE AN ELSE IF TO THE bytesLeft < count CONDITION?*/
-        if(memcpy(buf, filePtr->cp, count) == NULL)
-        {
-            printf("MEMCPY NULL (2)\n"); 
-            return -1;
-        }
-        printf("%s\n", buf); 
-        if(count < BUFF_SIZE)
-        {
-            printf("COUNT < BUFF_SIZE\n"); 
-            filePtr->cp += count;
-        }
-        else
-        {
-            printf("ADDED BUFF SIZE\n"); 
-            filePtr->cp += BUFF_SIZE;
-        }
 
-        printf("count= %ld\n", count);
-        count -= BUFF_SIZE;
-        printf("\n"); 
+        /*CASE 3: Can provide the bytes that are left in the File buf*/
+        if (count <= bytesLeft) 
+        /*check this because what if count is greater than buff size*/
+        {
+            printf("PROVIDE USER WITH CONTENTS THAT ARE IN FILE BUF (MEMCPY-ING)\n"); 
+            if(memcpy(buf, filePtr->cp, count) == NULL)
+            {
+                printf("MEMCPY NULL (2)\n"); 
+                return -1;
+            }
+            printf("\tCurrent User Buf Value (from %p): %s\n", buf, buf); 
+            filePtr->cp += count;
+            count -= count; 
+
+            // NO LONGER NEED THE FOLLOW CODE BECAUSE THIS WHOLE SECTION WOULD RUN UNDER A CONDITIONAL
+            // if(count <= BUFF_SIZE)
+            // {
+            //     printf("\tCOUNT <= BUFF_SIZE\n"); 
+            //     filePtr->cp += count;
+            //     count -= count; 
+            // }
+            // else
+            // {
+            //     printf("\tADDED BUFF SIZE\n"); 
+            //     filePtr->cp += BUFF_SIZE;
+            //     count -= BUFF_SIZE; 
+            // }
+
+            /*THE CONDITIONAL WILL STILL RUN WHEN COUNT < 0, maybe bc its size_t*/
+            /*Can't have count be a negative number because it is seen as an unsigned int*/
+            /*count -= BUFF_SIZE;*/
+            printf("\ncount = %ld\n", count);
+            printf("\n"); 
+        }
+        
     }
 
-    return 0; 
+    if (count == 0)
+    {
+        return originalCount; 
+    } 
+    else 
+    {
+        return originalCount - (originalCount - count); 
+    }
+    
 }
 /*
 * Writes count bytes from buf into the fd 
