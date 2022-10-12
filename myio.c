@@ -18,8 +18,10 @@
 struct File
 {
     int fd;
-    char *cp;
-    char fileBuf[BUFF_SIZE];
+    char *readCP;
+    char *writeCP;
+    char readBuf[BUFF_SIZE];
+    char writeBuf[BUFF_SIZE];
     int flags;
 
 };
@@ -32,7 +34,7 @@ int main(int argc, char *argv[])
 
     buf = malloc(30); 
     filePtr = myopen("testfile",O_RDWR);
-    printf("fd is %d buf pointer value is %p and cp pointer value is %p \n",filePtr->fd, filePtr->fileBuf, filePtr->cp);
+    printf("fd is %d buf pointer value is %p and readCP pointer value is %p \n",filePtr->fd, filePtr->readBuf, filePtr->readCP);
     
     results = myread(filePtr, buf, 2); // NEED TO TEST IT OUT WHEN YOU REQUEST MORE BYTES THAN THE FILE HAS 
     printf("***this is whats in the buf at %p: %s***\n", buf, buf); 
@@ -74,6 +76,7 @@ struct File * myopen(const char *pathname, int flags)
 
     filePtr->fd = fd;
     filePtr->flags = flags;
+    filePtr->writeCP = filePtr->writeBuf;
 
     return filePtr; 
 }
@@ -93,21 +96,21 @@ int myclose(int fd)
 */
 int myread(struct File *filePtr, char *buf, size_t count)
 { 
-    int flagRead, bytesRead;
+    int canRead, bytesRead;
     size_t bytesLeft, originalCount;
     originalCount = count; 
 
-    flagRead = 0;
+    canRead = 0;
 
     printf("\ninital buf: %p \tinitial count: %ld\n", buf, count);
 
     if(((filePtr->flags & O_RDONLY) != 0) || ((filePtr->flags & O_RDWR) != 0))
     {
         printf("CAN READ\n"); 
-        flagRead = 1;
+        canRead = 1;
     }
 
-    if(flagRead == 0)
+    if(canRead == 0)
     {
         printf("CANNOT READ\n"); 
         return 0;
@@ -116,13 +119,13 @@ int myread(struct File *filePtr, char *buf, size_t count)
     do 
     {
         /*CASE 1: File buf is empty*/
-        if(filePtr->cp == NULL)
+        if(filePtr->readCP == NULL)
         {
             printf("\nFILLING IN FILE BUF\n"); 
-            bytesRead = read(filePtr->fd, filePtr->fileBuf, BUFF_SIZE); 
+            bytesRead = read(filePtr->fd, filePtr->readBuf, BUFF_SIZE); 
             printf("\tRead %d bytes\n", bytesRead); 
-            printf("\tFile buf value: \'%s\'\n", filePtr->fileBuf); 
-            filePtr->cp = filePtr->fileBuf;
+            printf("\tFile buf value: \'%s\'\n", filePtr->readBuf); 
+            filePtr->readCP = filePtr->readBuf;
             if(bytesRead == -1)
             {
                 perror("read");
@@ -137,18 +140,18 @@ int myread(struct File *filePtr, char *buf, size_t count)
 
         if(bytesRead < BUFF_SIZE)
         {
-            bytesLeft = bytesRead - ((filePtr->cp) - (filePtr->fileBuf)); 
+            bytesLeft = bytesRead - ((filePtr->readCP) - (filePtr->readBuf)); 
         }
         else
         {
-            bytesLeft = BUFF_SIZE - ((filePtr->cp) - (filePtr->fileBuf));
+            bytesLeft = BUFF_SIZE - ((filePtr->readCP) - (filePtr->readBuf));
         }
          
         /*CASE 2: User requests more bytes than what is left in the File buf*/
         if(bytesLeft < count)
         {
             printf("\nUSER REQUESTED MORE BYTES THAN WHAT IS IN FILE BUF\n"); 
-            if(memcpy(buf, filePtr->cp, bytesLeft) == NULL)
+            if(memcpy(buf, filePtr->readCP, bytesLeft) == NULL)
             {
                 printf("MEMCPY NULL (1)\n"); 
                 return -1;
@@ -158,9 +161,9 @@ int myread(struct File *filePtr, char *buf, size_t count)
             buf += bytesLeft; /*change where we are writing to in the user's buf*/
             printf("\tupdated buf: %p \tupdated count: %ld\n", buf, count); 
             printf("\tREFILL FILE BUFF\n"); 
-            bytesRead = read(filePtr->fd, filePtr->fileBuf, BUFF_SIZE);
+            bytesRead = read(filePtr->fd, filePtr->readBuf, BUFF_SIZE);
             printf("\tRead %d bytes\n", bytesRead); 
-            printf("\tFile buf value: \'%s\'\n", filePtr->fileBuf); 
+            printf("\tFile buf value: \'%s\'\n", filePtr->readBuf); 
             if(bytesRead == -1)
             {
                 perror("read");
@@ -170,10 +173,10 @@ int myread(struct File *filePtr, char *buf, size_t count)
             {
                 printf("End of file\n");
                 // bytesLeft = 0; 
-                bytesLeft = bytesRead - ((filePtr->cp) - (filePtr->fileBuf)); 
+                bytesLeft = bytesRead - ((filePtr->readCP) - (filePtr->readBuf)); 
                 //return 0; return original count - count 
             }
-            filePtr->cp = filePtr->fileBuf; /*need to reset the cp pointer*/
+            filePtr->readCP = filePtr->readBuf; /*need to reset the readCP pointer*/
             printf("\t \n"); 
         }
         
@@ -189,25 +192,25 @@ int myread(struct File *filePtr, char *buf, size_t count)
             // if(bytesRead < BUFF_SIZE) // means you have read up to the end of the file because you weren't able to fill the entire buff
             // {
             //     printf("\tbytesRead < BUFF_SIZE\n"); 
-            //     if(memcpy(buf, filePtr->cp, bytesRead) == NULL)
+            //     if(memcpy(buf, filePtr->readCP, bytesRead) == NULL)
             //     {
             //         printf("MEMCPY NULL (2)\n");
             //         return -1;
             //     }
             //     printf("\tCurrent User Buf Value (from %p): %s\n", buf, buf);
-            //     filePtr->cp += bytesRead;
+            //     filePtr->readCP += bytesRead;
             //     count -= bytesRead;
             //     bytesRead -= bytesRead; 
             // } 
             // else 
             // {
-                if(memcpy(buf, filePtr->cp, count) == NULL)
+                if(memcpy(buf, filePtr->readCP, count) == NULL)
                 {
                     printf("MEMCPY NULL (2)\n");
                     return -1;
                 }
                 printf("\tCurrent User Buf Value (from %p): %s\n", buf, buf);
-                filePtr->cp += count;
+                filePtr->readCP += count;
                 count -= count;
                 bytesRead -= count; 
             // }
@@ -229,7 +232,7 @@ int myread(struct File *filePtr, char *buf, size_t count)
     {
         // printf("QUICK MEMCPY\n"); 
         // printf("\tbytesRead: %d\n", bytesRead); 
-        // if(memcpy(buf, filePtr->cp, bytesRead) == NULL)
+        // if(memcpy(buf, filePtr->readCP, bytesRead) == NULL)
         // {
         //     {
         //         printf("MEMCPY NULL (2)\n");
@@ -237,7 +240,7 @@ int myread(struct File *filePtr, char *buf, size_t count)
         //     }
         // }
         // printf("\tCurrent User Buf Value (from %p): %s\n", buf, buf);
-        // filePtr->cp += bytesRead; //do we need to change something here
+        // filePtr->readCP += bytesRead; //do we need to change something here
         // count -= bytesRead;
         return (originalCount - count); 
     }
@@ -246,8 +249,35 @@ int myread(struct File *filePtr, char *buf, size_t count)
 /*
 * Writes count bytes from buf into the fd 
 */
-int mywrite(int fd, const void *buf, size_t count)
+int mywrite(struct File *filePtr, const void *buf, size_t count)
 {
+    int canWrite;
+
+
+    canWrite = 0;
+
+    if(((filePtr->flags & O_WRONLY) != 0) || ((filePtr->flags & O_RDWR) != 0))
+    {
+        printf("CAN WRITE\n"); 
+        canWrite = 1;
+    }
+
+    if(canWrite == 0)
+    {
+        printf("CANNOT WRITE\n"); 
+        return 0;
+    }
+    
+    while(count > 0)
+    {
+    
+
+
+
+
+
+    }
+    
     return 0; 
 }
 
