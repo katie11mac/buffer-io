@@ -154,6 +154,7 @@ int mywrite(struct File *filePtr, void *buf, size_t count)
         {
             printf("RUNNING THE IF\n"); 
             memcpy(filePtr->writeCP, buf, count);
+            //what is memcpys error check?
             printf("***this is whats in the writeBuf at %p: %s***\n", filePtr->writeCP, filePtr->writeCP); 
             filePtr->writeCP += count;
             count = 0;
@@ -163,7 +164,12 @@ int mywrite(struct File *filePtr, void *buf, size_t count)
         {
             printf("RUNNING THE ELSE\n"); 
             memcpy(filePtr->writeCP, buf, bytesLeft);
-            write(filePtr->fd, filePtr->writeBuf, BUFF_SIZE);
+
+            if(write(filePtr->fd, filePtr->writeBuf, BUFF_SIZE) == -1)
+            {
+                perror("write");
+                exit(2);
+            }
             filePtr->writeCP = filePtr->writeBuf;
             count -= bytesLeft;
         }
@@ -172,12 +178,20 @@ int mywrite(struct File *filePtr, void *buf, size_t count)
     else
     {
         // write whats in writeBuf to file
-        write(filePtr->fd, filePtr->writeBuf, BUFF_SIZE-bytesLeft);
+        if(write(filePtr->fd, filePtr->writeBuf, BUFF_SIZE-bytesLeft) == -1)
+        {
+            perror("write");
+            exit(3);
+        }
         printf("this is how much we are writing: %d\n",BUFF_SIZE-bytesLeft);
         filePtr->writeCP = filePtr->writeBuf;
 
         //write count from buff to file
-        write(filePtr->fd, buf, count);
+        if(write(filePtr->fd, buf, count) == -1)
+        {
+            perror("write");
+            exit(3);
+        }
     }
     
     return 0; 
