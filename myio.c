@@ -76,18 +76,18 @@ int main(int argc, char *argv[])
     // printf("bytes read: %d\n\n", results); 
 
     //use following 2 to check, normal, end of readBuf, then refill readBuf but count>bytesLeft, BUFF_SIZE=20
-    results = myread(filePtr, userReadBuf, 19); 
-    printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
-    printf("bytes read: %d\n\n", results); 
-    results = myread(filePtr, userReadBuf+19, 6); 
-    printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
-    printf("bytes read: %d\n\n", results);
-    results = myread(filePtr, userReadBuf+25, 1); 
-    printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
-    printf("bytes read: %d\n\n", results);
-    results = myread(filePtr, userReadBuf+26, 2); 
-    printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
-    printf("bytes read: %d\n\n", results);
+    // results = myread(filePtr, userReadBuf, 19); 
+    // printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
+    // printf("bytes read: %d\n\n", results); 
+    // results = myread(filePtr, userReadBuf+19, 6); 
+    // printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
+    // printf("bytes read: %d\n\n", results);
+    // results = myread(filePtr, userReadBuf+25, 1); 
+    // printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
+    // printf("bytes read: %d\n\n", results);
+    // results = myread(filePtr, userReadBuf+26, 2); 
+    // printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
+    // printf("bytes read: %d\n\n", results);
 
 
 
@@ -96,11 +96,14 @@ int main(int argc, char *argv[])
     // printf("bytes read: %d\n\n", results); 
 
     //TESTS FOR MYWRITE FUNCTION
-    // userWriteBuf = "If we see this, we wrote correctly!";
-    // filePtr2 = myopen("writeTestFile",O_RDWR);
-    // mywrite(filePtr2, userWriteBuf, 5);
-    // mywrite(filePtr2, userWriteBuf+5, 7);
-    // mywrite(filePtr2, userWriteBuf+12, 10);
+    userWriteBuf = "If we see this, we wrote correctly!";
+    filePtr2 = myopen("writeTestFile",O_RDWR);
+    results = mywrite(filePtr2, userWriteBuf, 5);
+    printf("bytes written: %d\n", results); 
+    results = mywrite(filePtr2, userWriteBuf+5, 7);
+    printf("bytes written: %d\n", results); 
+    results = mywrite(filePtr2, userWriteBuf+12, 10);
+    printf("bytes written: %d\n", results); 
 
     return 0; 
 }
@@ -293,10 +296,11 @@ int myread(struct File *filePtr, char *buf, size_t count)
 /*
 * Writes count bytes from buf into the fd 
 */
-int mywrite(struct File *filePtr, void *buf, size_t count)
+int mywrite(struct File *filePtr, char *buf, size_t count)
 {
-    int canWrite, bytesLeft;
+    int canWrite, bytesLeft, originalCount, bytesWritten;
 
+    originalCount = count; 
     canWrite = 0;
 
     if(((filePtr->flags & O_WRONLY) != 0) || ((filePtr->flags & O_RDWR) != 0))
@@ -330,7 +334,7 @@ int mywrite(struct File *filePtr, void *buf, size_t count)
         // Case when count is greater the size left in our writeBuf
         else
         {
-            printf("RUNNING THE ELSE\n"); 
+            printf("\nRUNNING THE ELSE\n"); 
             memcpy(filePtr->writeCP, buf, bytesLeft);
 
             if(write(filePtr->fd, filePtr->writeBuf, BUFF_SIZE) == -1)
@@ -339,8 +343,11 @@ int mywrite(struct File *filePtr, void *buf, size_t count)
                 exit(2);
             }
             filePtr->writeCP = filePtr->writeBuf;
-            count -= bytesLeft;
+            count -= bytesLeft; 
+            memcpy(filePtr->writeCP, buf + bytesLeft, count); 
+            count = 0;
         }
+        return originalCount - count; 
     }
     // if count is bigger than writeBuf we do syscall automatically
     else
@@ -355,14 +362,15 @@ int mywrite(struct File *filePtr, void *buf, size_t count)
         filePtr->writeCP = filePtr->writeBuf;
 
         //write count from buff to file
-        if(write(filePtr->fd, buf, count) == -1)
+        if((bytesWritten = write(filePtr->fd, buf, count)) == -1)
         {
             perror("write");
             exit(3);
         }
+
+        return bytesWritten; 
     }
     
-    return 0; 
 }
 
 /*
