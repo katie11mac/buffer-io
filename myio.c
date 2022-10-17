@@ -79,7 +79,13 @@ int main(int argc, char *argv[])
     results = myread(filePtr, userReadBuf, 19); 
     printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
     printf("bytes read: %d\n\n", results); 
-    results = myread(filePtr, userReadBuf+19, 19); 
+    results = myread(filePtr, userReadBuf+19, 6); 
+    printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
+    printf("bytes read: %d\n\n", results);
+    results = myread(filePtr, userReadBuf+25, 1); 
+    printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
+    printf("bytes read: %d\n\n", results);
+    results = myread(filePtr, userReadBuf+26, 2); 
     printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
     printf("bytes read: %d\n\n", results);
 
@@ -228,7 +234,7 @@ int myread(struct File *filePtr, char *buf, size_t count)
             userBytesRead = count;
         }
         //special case: when count is greater than or equal to the unread bytes in readBuf (bytesLeft)
-        if (count >= filePtr->bytesLeft)
+        else
         {
             memcpy(buf, filePtr->readCP, filePtr->bytesLeft);
             count -= filePtr->bytesLeft;
