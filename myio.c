@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
     int results; 
 
     userReadBuf = malloc(30); 
-    filePtr = myopen("testfile",O_RDWR);
+    filePtr = myopen("testfile100",O_RDWR);
     printf("fd is %d readBuf pointer value is %p and readCP pointer value is %p \n",filePtr->fd, filePtr->readBuf, filePtr->readCP);
     
     // results = myread(filePtr, userReadBuf, 2); // NEED TO TEST IT OUT WHEN YOU REQUEST MORE BYTES THAN THE FILE HAS 
@@ -104,6 +104,7 @@ int main(int argc, char *argv[])
     printf("bytes written: %d\n", results); 
     results = mywrite(filePtr2, userWriteBuf+12, 10);
     printf("bytes written: %d\n", results); 
+    myclose(filePtr2); 
 
     return 0; 
 }
@@ -143,9 +144,19 @@ struct File * myopen(const char *pathname, int flags)
 /*
 * Closes the file descriptor
 */
-int myclose(int fd)
+int myclose(struct File *filePtr)
 {
-    return 0; 
+
+    int results; 
+
+    myflush(filePtr); 
+
+    if ((results = close(filePtr->fd)) == -1)
+    {
+        perror("close"); 
+    } 
+
+    return results; 
 }
 
 /*
@@ -344,7 +355,8 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
             }
             filePtr->writeCP = filePtr->writeBuf;
             count -= bytesLeft; 
-            memcpy(filePtr->writeCP, buf + bytesLeft, count); 
+            memcpy(filePtr->writeCP, buf + bytesLeft, count);
+            filePtr->writeCP += count;  
             count = 0;
         }
         return originalCount - count; 
@@ -376,9 +388,14 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
 /*
 * Forces any buffered data to the destination fd 
 *
-* Note: Don't know if we need size 
 */ 
-void myflush(int fd, void *buf, size_t size)
+void myflush(struct File *filePtr)
 {
+    printf("CP - writeBuf: %ld\n", filePtr->writeCP - filePtr->writeBuf); 
+    if(write(filePtr->fd, filePtr->writeBuf, filePtr->writeCP - filePtr->writeBuf) == -1)
+    {
+        perror("write");
+        exit(2);
+    } 
 
 }
