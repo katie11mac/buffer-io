@@ -11,7 +11,7 @@
 
 #include <fcntl.h>
 
-#define BUFF_SIZE 20
+#define BUFF_SIZE 10
 /*
  buf_size and struct file should be in the header
 */
@@ -24,6 +24,7 @@ struct File
     char writeBuf[BUFF_SIZE];
     int flags;
     int bytesLeft;
+    int fileOffset;
 
 };
 
@@ -36,7 +37,7 @@ int main(int argc, char *argv[])
     int results; 
 
     userReadBuf = malloc(30); 
-    filePtr = myopen("testfile100",O_RDWR);
+    filePtr = myopen("testfile",O_RDWR);
     printf("fd is %d readBuf pointer value is %p and readCP pointer value is %p \n",filePtr->fd, filePtr->readBuf, filePtr->readCP);
     
     // results = myread(filePtr, userReadBuf, 2); // NEED TO TEST IT OUT WHEN YOU REQUEST MORE BYTES THAN THE FILE HAS 
@@ -59,7 +60,7 @@ int main(int argc, char *argv[])
     // printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
     // printf("bytes read: %d\n\n", results); 
     
-    //use following two to check if you have want case where second call uses rest of readBuf then makes syscall straight to buf BUFF_SIZE =10, readUserBuf =30
+    //use following two to check if you want case where second call uses rest of readBuf then makes syscall straight to buf BUFF_SIZE =10, readUserBuf =30
     // results = myread(filePtr, userReadBuf, 7); 
     // printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
     // printf("bytes read: %d\n\n", results); 
@@ -69,11 +70,14 @@ int main(int argc, char *argv[])
 
     //use following two to check if you have want case where second call uses rest of readBuf then reads and memcpys per usual BUFF_SIZE =10, readUserBuf =30
     // results = myread(filePtr, userReadBuf, 7); 
-    // printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
-    // printf("bytes read: %d\n\n", results); 
+    // //printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf);
+    // printf("fileOffset is %d\n",filePtr->fileOffset); 
+
+    // //printf("bytes read: %d\n\n", results); 
     // results = myread(filePtr, userReadBuf+7, 10); 
-    // printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
-    // printf("bytes read: %d\n\n", results); 
+    // printf("fileOffset is %d\n",filePtr->fileOffset); 
+    //printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
+   //printf("bytes read: %d\n\n", results); 
 
     //use following 2 to check, normal, end of readBuf, then refill readBuf but count>bytesLeft, BUFF_SIZE=20
     // results = myread(filePtr, userReadBuf, 19); 
@@ -96,15 +100,20 @@ int main(int argc, char *argv[])
     // printf("bytes read: %d\n\n", results); 
 
     //TESTS FOR MYWRITE FUNCTION
-    userWriteBuf = "If we see this, we wrote correctly!";
-    filePtr2 = myopen("writeTestFile",O_RDWR);
-    results = mywrite(filePtr2, userWriteBuf, 5);
-    printf("bytes written: %d\n", results); 
-    results = mywrite(filePtr2, userWriteBuf+5, 7);
-    printf("bytes written: %d\n", results); 
-    results = mywrite(filePtr2, userWriteBuf+12, 10);
-    printf("bytes written: %d\n", results); 
-    myclose(filePtr2); 
+    // userWriteBuf = "If we see this, we wrote correctly!";
+    // filePtr2 = myopen("writeTestFile",O_RDWR);
+    // results = mywrite(filePtr2, userWriteBuf, 5);
+    // printf("fileOffset is %d\n",filePtr2->fileOffset);
+    // // printf("bytes written: %d\n", results); 
+
+    // results = mywrite(filePtr2, userWriteBuf+5, 7);
+    // // printf("bytes written: %d\n", results); 
+    // printf("fileOffset is %d\n",filePtr2->fileOffset);
+
+    // results = mywrite(filePtr2, userWriteBuf+12, 10);
+    // // printf("bytes written: %d\n", results);
+    // printf("fileOffset is %d\n",filePtr2->fileOffset); 
+    // myclose(filePtr2); 
 
     return 0; 
 }
@@ -137,6 +146,7 @@ struct File * myopen(const char *pathname, int flags)
     filePtr->writeCP = filePtr->writeBuf;
     filePtr->readCP = filePtr->readBuf;
     filePtr->bytesLeft = 0;
+    filePtr->fileOffset = 0;
 
     return filePtr; 
 }
@@ -195,6 +205,9 @@ int myread(struct File *filePtr, char *buf, size_t count)
         if(count >= BUFF_SIZE)
         {
             bytesRead = read(filePtr->fd, buf, count);
+
+            filePtr->fileOffset += bytesRead;
+
             if(bytesRead == -1)
             {
                 perror("read");
@@ -208,6 +221,9 @@ int myread(struct File *filePtr, char *buf, size_t count)
         else
         {
             bytesRead = read(filePtr->fd, filePtr->readBuf, BUFF_SIZE);
+            
+            filePtr->fileOffset += bytesRead;
+
             if(bytesRead == -1)
             {
                 perror("read");
@@ -259,6 +275,9 @@ int myread(struct File *filePtr, char *buf, size_t count)
             {
                 // printf("entered the right case\n");
                 bytesRead = read(filePtr->fd, buf+filePtr->bytesLeft, count);
+
+                filePtr->fileOffset += bytesRead;
+
                 if(bytesRead == -1)
                 {
                     perror("read");
@@ -271,6 +290,8 @@ int myread(struct File *filePtr, char *buf, size_t count)
             else
             {
                 bytesRead = read(filePtr->fd, filePtr->readBuf, BUFF_SIZE);
+
+                filePtr->fileOffset += bytesRead;
                 
                 if(bytesRead == -1)
                 {
@@ -316,13 +337,11 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
 
     if(((filePtr->flags & O_WRONLY) != 0) || ((filePtr->flags & O_RDWR) != 0))
     {
-        printf("CAN WRITE\n"); 
         canWrite = 1;
     }
 
     if(canWrite == 0)
     {
-        printf("CANNOT WRITE\n"); 
         return 0;
     }
 
@@ -331,28 +350,31 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
     // if count is smaller than writeBuf we write to writeBuf until full
     if(count < BUFF_SIZE)
     {    
-        printf("bytesLeft: %d\n", bytesLeft); 
         // Case when count is less than size left in our writeBuf
         if(count <= bytesLeft)
         {
-            printf("RUNNING THE IF\n"); 
+            // printf("RUNNING THE IF\n"); 
             memcpy(filePtr->writeCP, buf, count);
             //what is memcpys error check?
-            printf("***this is whats in the writeBuf at %p: %s***\n", filePtr->writeCP, filePtr->writeCP); 
+            // printf("***this is whats in the writeBuf at %p: %s***\n", filePtr->writeCP, filePtr->writeCP); 
             filePtr->writeCP += count;
             count = 0;
         }
         // Case when count is greater the size left in our writeBuf
         else
         {
-            printf("\nRUNNING THE ELSE\n"); 
+            // printf("\nRUNNING THE ELSE\n"); 
             memcpy(filePtr->writeCP, buf, bytesLeft);
 
-            if(write(filePtr->fd, filePtr->writeBuf, BUFF_SIZE) == -1)
+            bytesWritten = write(filePtr->fd, filePtr->writeBuf, BUFF_SIZE);
+            if(bytesWritten == -1)
             {
                 perror("write");
                 exit(2);
             }
+
+            filePtr->fileOffset += bytesWritten;
+
             filePtr->writeCP = filePtr->writeBuf;
             count -= bytesLeft; 
             memcpy(filePtr->writeCP, buf + bytesLeft, count);
@@ -365,20 +387,28 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
     else
     {
         // write whats in writeBuf to file
-        if(write(filePtr->fd, filePtr->writeBuf, BUFF_SIZE-bytesLeft) == -1)
+        bytesWritten = write(filePtr->fd, filePtr->writeBuf, BUFF_SIZE-bytesLeft);
+        
+        if(bytesWritten == -1)
         {
             perror("write");
             exit(3);
         }
-        printf("this is how much we are writing: %d\n",BUFF_SIZE-bytesLeft);
+
+        filePtr->fileOffset += bytesWritten;
+
+        // printf("this is how much we are writing: %d\n",BUFF_SIZE-bytesLeft);
         filePtr->writeCP = filePtr->writeBuf;
 
         //write count from buff to file
-        if((bytesWritten = write(filePtr->fd, buf, count)) == -1)
+        bytesWritten = write(filePtr->fd, buf, count);
+        if(bytesWritten == -1)
         {
             perror("write");
             exit(3);
         }
+
+        filePtr->fileOffset += bytesWritten;
 
         return bytesWritten; 
     }
@@ -391,11 +421,16 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
 */ 
 void myflush(struct File *filePtr)
 {
+    int bytesWritten;
+
     printf("CP - writeBuf: %ld\n", filePtr->writeCP - filePtr->writeBuf); 
-    if(write(filePtr->fd, filePtr->writeBuf, filePtr->writeCP - filePtr->writeBuf) == -1)
+
+    bytesWritten = write(filePtr->fd, filePtr->writeBuf, filePtr->writeCP - filePtr->writeBuf);
+    
+    if(bytesWritten == -1)
     {
         perror("write");
         exit(2);
     } 
-
+    filePtr->fileOffset += bytesWritten;
 }
