@@ -38,8 +38,10 @@ int main(int argc, char *argv[])
 
     userReadBuf = malloc(30); 
     filePtr = myopen("testfile",O_RDWR);
-    printf("fd is %d readBuf pointer value is %p and readCP pointer value is %p \n",filePtr->fd, filePtr->readBuf, filePtr->readCP);
+    //printf("fd is %d readBuf pointer value is %p and readCP pointer value is %p \n",filePtr->fd, filePtr->readBuf, filePtr->readCP);
     
+    myseek(filePtr, 0, SEEK_CUR);
+    myseek(filePtr, 0, SEEK_SET);
     // results = myread(filePtr, userReadBuf, 2); // NEED TO TEST IT OUT WHEN YOU REQUEST MORE BYTES THAN THE FILE HAS 
     // printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
     // printf("bytes read: %d\n\n", results); 
@@ -433,4 +435,35 @@ void myflush(struct File *filePtr)
         exit(2);
     } 
     filePtr->fileOffset += bytesWritten;
+}
+
+int myseek(struct File *filePtr, int offset, int whence)
+{
+    
+    //check whence
+    if(whence == SEEK_CUR)
+    {
+        printf("SEEK_CUR\n"); 
+
+        //check bounds for writeBuf
+        if((filePtr->writeCP+offset > filePtr->writeBuf) && (filePtr->writeCP+offset < (filePtr->writeBuf)+BUFF_SIZE)
+        {
+            filePtr->writeCP += offset;
+        }
+        else
+        {
+            myflush(filePtr);
+        }
+
+    }
+    else if(whence == SEEK_SET)
+    {
+        printf("SEEK_SET\n"); 
+    }
+    else
+    {
+        return -1;
+    }
+
+    return filePtr->fileOffset;
 }
