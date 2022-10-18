@@ -40,8 +40,16 @@ int main(int argc, char *argv[])
     filePtr = myopen("testfile",O_RDWR);
     //printf("fd is %d readBuf pointer value is %p and readCP pointer value is %p \n",filePtr->fd, filePtr->readBuf, filePtr->readCP);
     
-    myseek(filePtr, 0, SEEK_CUR);
-    myseek(filePtr, 0, SEEK_SET);
+    myread(filePtr, userReadBuf, 7); 
+    printf("fileOffset: %d\n", filePtr->fileOffset); 
+    myseek(filePtr, 2, SEEK_CUR);
+    printf("fileOffset: %d\n", filePtr->fileOffset); 
+    myread(filePtr, userReadBuf + 7, 10); 
+    printf("fileOffset: %d\n", filePtr->fileOffset); 
+    printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
+
+
+    // myseek(filePtr, 0, SEEK_SET);
     // results = myread(filePtr, userReadBuf, 2); // NEED TO TEST IT OUT WHEN YOU REQUEST MORE BYTES THAN THE FILE HAS 
     // printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
     // printf("bytes read: %d\n\n", results); 
@@ -437,7 +445,7 @@ void myflush(struct File *filePtr)
     filePtr->fileOffset += bytesWritten;
 }
 
-int myseek(struct File *filePtr, int offset, int whence)
+int myseek(struct File *filePtr, off_t offset, int whence)
 {
     
     //check whence
@@ -446,13 +454,29 @@ int myseek(struct File *filePtr, int offset, int whence)
         printf("SEEK_CUR\n"); 
 
         //check bounds for writeBuf
-        if((filePtr->writeCP+offset > filePtr->writeBuf) && (filePtr->writeCP+offset < (filePtr->writeBuf)+BUFF_SIZE)
+        if((filePtr->writeCP + offset > filePtr->writeBuf) && (filePtr->writeCP + offset < (filePtr->writeBuf) + BUFF_SIZE))
         {
             filePtr->writeCP += offset;
         }
         else
         {
             myflush(filePtr);
+            filePtr->fileOffset += offset; 
+            lseek(filePtr->fd, offset, whence); 
+            filePtr->writeCP = filePtr->writeBuf; 
+        }
+
+        //check bounds for readBuf 
+        if((filePtr->readCP + offset > filePtr->readBuf) && (filePtr->readCP + offset < ((filePtr->readCP - filePtr->readBuf) + filePtr->bytesLeft)))
+        {
+            filePtr->readCP += offset;
+        }
+        else 
+        {
+            filePtr->fileOffset += offset; 
+            lseek(filePtr->fd, offset, whence); 
+            read(filePtr->fd, filePtr->readBuf, BUFF_SIZE);
+            filePtr->readCP = filePtr->readBuf; 
         }
 
     }
