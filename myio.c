@@ -458,7 +458,6 @@ void myflush(struct File *filePtr)
 
 int myseek(struct File *filePtr, int offset, int whence)
 {
-    
     //check whence
     if(whence == SEEK_CUR)
     {
@@ -472,6 +471,7 @@ int myseek(struct File *filePtr, int offset, int whence)
         }
         else
         {
+            outOfBoundsWrite = 1;
             myflush(filePtr);
             filePtr->fileOffset += offset; 
             lseek(filePtr->fd, offset, whence); 
