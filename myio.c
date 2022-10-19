@@ -40,11 +40,15 @@ int main(int argc, char *argv[])
     filePtr = myopen("testfile",O_RDWR);
     //printf("fd is %d readBuf pointer value is %p and readCP pointer value is %p \n",filePtr->fd, filePtr->readBuf, filePtr->readCP);
     
+    printf("at the beginning readCP: %p\n", filePtr->readCP);
     myread(filePtr, userReadBuf, 7); 
     printf("fileOffset: %d\n", filePtr->fileOffset); 
-    myseek(filePtr, 2, SEEK_CUR);
+    printf("after read 7 readCP: %p\n", filePtr->readCP);
+    myseek(filePtr, -2, SEEK_CUR);
     printf("fileOffset: %d\n", filePtr->fileOffset); 
-    myread(filePtr, userReadBuf + 7, 10); 
+    printf("after myseek readCP: %p\n", filePtr->readCP);
+   
+    myread(filePtr, userReadBuf + 7, 10); //we should get "should d we put s"
     printf("fileOffset: %d\n", filePtr->fileOffset); 
     printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
 
@@ -196,13 +200,13 @@ int myread(struct File *filePtr, char *buf, size_t count)
 
     if(((filePtr->flags & O_RDONLY) != 0) || ((filePtr->flags & O_RDWR) != 0))
     {
-        printf("CAN READ\n"); 
+        //printf("CAN READ\n"); 
         canRead = 1;
     }
 
     if(canRead == 0)
     {
-        printf("CANNOT READ\n"); 
+        //printf("CANNOT READ\n"); 
         return 0;
     }
 
@@ -240,6 +244,9 @@ int myread(struct File *filePtr, char *buf, size_t count)
                 exit(3);
             }
             filePtr->bytesLeft = bytesRead; //bytes unread in readBuf = bytes just read into readBuf
+
+            //printf("bytesLeft = %d\n", filePtr->bytesLeft);
+
             filePtr->readCP = filePtr->readBuf; //reset CP after each new read
 
             //if bytesRead is less than count, give user bytesRead
@@ -259,12 +266,14 @@ int myread(struct File *filePtr, char *buf, size_t count)
                 userBytesRead = count;
             }
         }
+        //printf("bytesLeft now = %d\n", filePtr->bytesLeft);
     }
+    
     
     //second case: when readBuf isn't empty
     else
     {
-        printf("COUNT = %ld, BYTESLEFT= %d, readBuf = %p, readCP = %p\n", count, filePtr->bytesLeft, filePtr->readBuf, filePtr->readCP);
+        //printf("COUNT = %ld, BYTESLEFT= %d, readBuf = %p, readCP = %p\n", count, filePtr->bytesLeft, filePtr->readBuf, filePtr->readCP);
         //normal case: when count is less than unread bytes in readBuf (bytesLeft) 
         if(count < filePtr->bytesLeft)
         {
@@ -330,8 +339,10 @@ int myread(struct File *filePtr, char *buf, size_t count)
             }
 
         }
+        
 
     }
+    //printf("bytesLeft now = %d\n", filePtr->bytesLeft);
     return userBytesRead;
     
 }
@@ -433,7 +444,7 @@ void myflush(struct File *filePtr)
 {
     int bytesWritten;
 
-    printf("CP - writeBuf: %ld\n", filePtr->writeCP - filePtr->writeBuf); 
+    //printf("CP - writeBuf: %ld\n", filePtr->writeCP - filePtr->writeBuf); 
 
     bytesWritten = write(filePtr->fd, filePtr->writeBuf, filePtr->writeCP - filePtr->writeBuf);
     
@@ -445,16 +456,17 @@ void myflush(struct File *filePtr)
     filePtr->fileOffset += bytesWritten;
 }
 
-int myseek(struct File *filePtr, off_t offset, int whence)
+int myseek(struct File *filePtr, int offset, int whence)
 {
     
     //check whence
     if(whence == SEEK_CUR)
     {
-        printf("SEEK_CUR\n"); 
+        //printf("SEEK_CUR\n"); 
+        //printf("bytesLeft now = %d\n", filePtr->bytesLeft);
 
         //check bounds for writeBuf
-        if((filePtr->writeCP + offset > filePtr->writeBuf) && (filePtr->writeCP + offset < (filePtr->writeBuf) + BUFF_SIZE))
+        if((filePtr->writeCP + offset > filePtr->writeBuf) && (filePtr->writeCP + offset < (filePtr->writeBuf + BUFF_SIZE)))
         {
             filePtr->writeCP += offset;
         }
@@ -467,9 +479,12 @@ int myseek(struct File *filePtr, off_t offset, int whence)
         }
 
         //check bounds for readBuf 
-        if((filePtr->readCP + offset > filePtr->readBuf) && (filePtr->readCP + offset < ((filePtr->readCP - filePtr->readBuf) + filePtr->bytesLeft)))
+        if((filePtr->readCP + offset > filePtr->readBuf) && ((filePtr->readCP + offset) < (filePtr->readCP + filePtr->bytesLeft)))
         {
+            printf("filePtr->readCP = %p and filePtr->bytesLeft=%d\n",filePtr->readCP, filePtr->bytesLeft);
             filePtr->readCP += offset;
+            filePtr->bytesLeft -= offset;
+            printf("filePtr->readCP = %p and filePtr->bytesLeft=%d\n",filePtr->readCP, filePtr->bytesLeft);
         }
         else 
         {
