@@ -14,27 +14,30 @@ int main(int argc, char *argv[])
     char *userWriteBuf;
     int results; 
 
-    testMyRead(); 
-    testMyWrite(); 
-    testMyReadAndMyWrite(); 
+    // testMyRead(); 
+    // testMyWrite(); 
+    // testMyReadAndMyWrite(); 
 
     // lseek 
 
-    // userReadBuf = malloc(30); 
-    // filePtr = myopen("testfile",O_RDWR);
-    // //printf("fd is %d readBuf pointer value is %p and readCP pointer value is %p \n",filePtr->fd, filePtr->readBuf, filePtr->readCP);
+    userReadBuf = malloc(30); 
+    filePtr = myopen("testfile",O_RDWR);
+    //printf("fd is %d readBuf pointer value is %p and readCP pointer value is %p \n",filePtr->fd, filePtr->readBuf, filePtr->readCP);
     
-    // printf("at the beginning readCP: %p\n", filePtr->readCP);
-    // myread(filePtr, userReadBuf, 7); 
-    // printf("fileOffset: %d\n", filePtr->fileOffset); 
-    // printf("after read 7 readCP: %p\n", filePtr->readCP);
-    // myseek(filePtr, -2, SEEK_CUR);
-    // printf("fileOffset: %d\n", filePtr->fileOffset); 
-    // printf("after myseek readCP: %p\n", filePtr->readCP);
+    //what we should get: "should ould we pu"
+    printf("fileOffset: %d\n", lseek(filePtr->fd, 0, SEEK_CUR));
+    printf("at the beginning readCP: %p\n", filePtr->CP);
+    myread(filePtr, userReadBuf, 7); 
+    printf("fileOffset: %d\n", lseek(filePtr->fd, 0, SEEK_CUR)); 
+    printf("after read 7 readCP: %p\n", filePtr->CP);
+    myseek(filePtr, 2, SEEK_SET);
+    printf("fileOffset: %d\n", lseek(filePtr->fd, 0, SEEK_CUR)); 
+    printf("after myseek readCP: %p\n", filePtr->CP);
+    printf("bytesLeft (after): %d\n", filePtr->bytesLeft); 
    
-    // myread(filePtr, userReadBuf + 7, 10); //we should get "should d we put s"
-    // printf("fileOffset: %d\n", filePtr->fileOffset); 
-    // printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
+    myread(filePtr, userReadBuf + 7, 10); //we should get "should  put stuff"
+     printf("fileOffset: %d\n", lseek(filePtr->fd, 0, SEEK_CUR)); 
+    printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
 
 
 
@@ -210,7 +213,7 @@ void testMyWrite()
     results = mywrite(writeFilePtr, userWriteBuf, 5);
     total += results; 
     printf("\tbytes written: %d\n", results); 
-    printf("\tvalue of writeFilePtr starting at %p: \'%s\'\n\n", writeFilePtr->writeBuf, writeFilePtr->writeBuf); 
+    printf("\tvalue of writeFilePtr starting at %p: \'%s\'\n\n", writeFilePtr->hiddenBuf, writeFilePtr->hiddenBuf); 
 
     // TEST 2: Write an amount of bytes larger than the space left in the file buffer
     // which will complete a syscall and still have some bytes remaining in the buffer
@@ -219,12 +222,12 @@ void testMyWrite()
     total += results; 
     printf("\tbytes written: %d\n", results); 
     // do we care about what is in the buffer tho? bc it can do a syscall during the functino
-    printf("\tvalue of writeFilePtr starting at %p: \'%s\'\n\n", writeFilePtr->writeBuf, writeFilePtr->writeBuf); 
+    printf("\tvalue of writeFilePtr starting at %p: \'%s\'\n\n", writeFilePtr->hiddenBuf, writeFilePtr->hiddenBuf); 
 
     results = mywrite(writeFilePtr, userWriteBuf + total, 23);
     total += results; 
     printf("\tbytes written: %d\n", results); 
-    printf("\tvalue of writeFilePtr starting at %p: \'%s\'\n\n", writeFilePtr->writeBuf, writeFilePtr->writeBuf); 
+    printf("\tvalue of writeFilePtr starting at %p: \'%s\'\n\n", writeFilePtr->hiddenBuf, writeFilePtr->hiddenBuf); 
 
     // TEST 3: Closing and flushing writeBuf  
     results = myclose(writeFilePtr); 
@@ -256,23 +259,26 @@ void testMyReadAndMyWrite()
     readFilePtr = myopen("readwritefile", O_RDWR); // testfile has 27 characters 
     //note how it is testing on the same file that myread is testing on
     
+    //what we should get: "should If wet stuff in it?"
+
     // TEST 1: Request count smaller than buff size and smaller than file size, 
     // so count < BUFF_SIZE < total bytes in file 
-    printf("TEST 1: READ\n"); 
-    results = myread(readFilePtr, userReadBuf, 7);
-    total += results; 
-    printf("\tbytes read: %d\n", results); 
-    printf("\tvalue of userReadBuf starting at %p: \'%s\'\n\n", userReadBuf, userReadBuf); 
+    // printf("TEST 1: READ\n"); 
+    // results = myread(readFilePtr, userReadBuf, 7);
+    // total += results; 
+    // printf("\tbytes read: %d\n", results); 
+    // printf("\tvalue of userReadBuf starting at %p: \'%s\'\n\n", userReadBuf, userReadBuf); 
 
     // TEST 1: Write an amount of bytes smaller than the BUFF_SIZE, which will not complete a syscall
+    //we should get: "If wed we put stuff"
     printf("TEST 1: WRITE \n"); 
     results = mywrite(readFilePtr, userWriteBuf, 5);
     total += results; 
     printf("\tbytes written: %d\n", results); 
-    printf("\tvalue of readFilePtr starting at %p: \'%s\'\n\n", readFilePtr->writeBuf, readFilePtr->writeBuf); 
+    printf("\tvalue of readFilePtr starting at %p: \'%s\'\n\n", readFilePtr->hiddenBuf, readFilePtr->hiddenBuf); 
 
     // TEST 2: Request count that uses the rest of readBuf and then makes syscall straight to buf 
-    // count > BUFF_SIZE and count > bytesLeft and count < total bytes in file 
+    //count > BUFF_SIZE and count > bytesLeft and count < total bytes in file 
     printf("TEST 2: READ\n"); 
     results = myread(readFilePtr, userReadBuf + total, 14); 
     total += results; 
@@ -280,34 +286,34 @@ void testMyReadAndMyWrite()
     printf("\tvalue of userReadBuf starting at %p: \'%s\'\n\n", userReadBuf, userReadBuf); 
 
     // 
-    results = myread(readFilePtr, userReadBuf + total, 4); 
-    total += results; 
-    printf("\tbytes read: %d\n", results); 
-    printf("\tvalue of userReadBuf starting at %p: \'%s\'\n\n", userReadBuf, userReadBuf); 
+    // results = myread(readFilePtr, userReadBuf + total, 4); 
+    // total += results; 
+    // printf("\tbytes read: %d\n", results); 
+    // printf("\tvalue of userReadBuf starting at %p: \'%s\'\n\n", userReadBuf, userReadBuf); 
 
     // TEST 3: Request amount smaller than bytesLeft when close to the end of the file, 
     // so count < bytesLeft 
-    printf("TEST 3: READ\n"); 
-    results = myread(readFilePtr, userReadBuf + total, 1); 
-    total += results; 
-    printf("\tbytes read: %d\n", results); 
-    printf("\tvalue of userReadBuf starting at %p: \'%s\'\n\n", userReadBuf, userReadBuf); 
+    // printf("TEST 3: READ\n"); 
+    // results = myread(readFilePtr, userReadBuf + total, 1); 
+    // total += results; 
+    // printf("\tbytes read: %d\n", results); 
+    // printf("\tvalue of userReadBuf starting at %p: \'%s\'\n\n", userReadBuf, userReadBuf); 
 
     // TEST 4: Request amount larger than bytesLeft when there should only be one byte left in the file, 
     // so count > bytesLeft
-    printf("TEST 4: READ\n"); 
-    results = myread(readFilePtr, userReadBuf + total, 3); 
-    total += results; 
-    printf("\tbytes read: %d\n", results); 
-    printf("\tvalue of userReadBuf starting at %p: \'%s\'\n\n", userReadBuf, userReadBuf); 
+    // printf("TEST 4: READ\n"); 
+    // results = myread(readFilePtr, userReadBuf + total, 3); 
+    // total += results; 
+    // printf("\tbytes read: %d\n", results); 
+    // printf("\tvalue of userReadBuf starting at %p: \'%s\'\n\n", userReadBuf, userReadBuf); 
 
     // TEST 5: Try to read the file when all of the file has already been read, 
     // so count > bytesLeft 
-    printf("TEST 5: READ\n"); 
-    results = myread(readFilePtr, userReadBuf + total, 2); 
-    total += results; 
-    printf("\tbytes read: %d\n", results); 
-    printf("\tvalue of userReadBuf starting at %p: \'%s\'\n\n", userReadBuf, userReadBuf); 
+    // printf("TEST 5: READ\n"); 
+    // results = myread(readFilePtr, userReadBuf + total, 2); 
+    // total += results; 
+    // printf("\tbytes read: %d\n", results); 
+    // printf("\tvalue of userReadBuf starting at %p: \'%s\'\n\n", userReadBuf, userReadBuf); 
 
     // Close the testfile 
     results = myclose(readFilePtr);

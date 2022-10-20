@@ -5,10 +5,8 @@ struct File * myopen(const char *pathname, int flags);
 struct File
 {
     int fd;
-    char *readCP;
-    char *writeCP;
-    char readBuf[BUFF_SIZE];
-    char writeBuf[BUFF_SIZE];
+    char *CP;
+    char hiddenBuf[BUFF_SIZE];
     int flags;
     int bytesLeft;
     int fileOffset;
