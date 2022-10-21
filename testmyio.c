@@ -2,117 +2,20 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 void testMyRead(); 
 void testMyWrite();
 void testMyReadAndMyWrite(); 
+void testMySeek(); 
 
 int main(int argc, char *argv[])
 {
-    struct File *filePtr;
-    char *userReadBuf;
-    char *userWriteBuf;
-    int results; 
-
     // testMyRead(); 
     // testMyWrite(); 
     // testMyReadAndMyWrite(); 
-
-    // lseek 
-
-    userReadBuf = malloc(30); 
-    filePtr = myopen("testfile",O_RDWR);
-    //printf("fd is %d readBuf pointer value is %p and readCP pointer value is %p \n",filePtr->fd, filePtr->readBuf, filePtr->readCP);
-    
-    //what we should get: "should ould we pu"
-    printf("fileOffset: %d\n", lseek(filePtr->fd, 0, SEEK_CUR));
-    printf("at the beginning readCP: %p\n", filePtr->CP);
-    myread(filePtr, userReadBuf, 7); 
-    printf("fileOffset: %d\n", lseek(filePtr->fd, 0, SEEK_CUR)); 
-    printf("after read 7 readCP: %p\n", filePtr->CP);
-    myseek(filePtr, 2, SEEK_SET);
-    printf("fileOffset: %d\n", lseek(filePtr->fd, 0, SEEK_CUR)); 
-    printf("after myseek readCP: %p\n", filePtr->CP);
-    printf("bytesLeft (after): %d\n", filePtr->bytesLeft); 
+    testMySeek(); 
    
-    myread(filePtr, userReadBuf + 7, 10); //we should get "should  put stuff"
-     printf("fileOffset: %d\n", lseek(filePtr->fd, 0, SEEK_CUR)); 
-    printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
-
-
-
-
-
-    // results = myread(readFilePtr, userReadBuf, 40); 
-    // //USE TO TEST WHEN BUFF=50 FOR COUNT<BUFF & COUNT>BYTES IN FILE
-    // //USE TO TEST WHEN BUFF=30, COUNT>BUFF & BUFF>BYTES IN FILE
-    // printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
-    // printf("bytes read: %d\n\n", results); 
-
-    //use following two to test one read and then another from readBuf when BUFF=30
-    // results = myread(readFilePtr, userReadBuf, 5); //USE TO TEST WHEN BUFF=10, FOR COUNT<BUFF_SIZE<BYTES IN FILE
-    // printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
-    // printf("bytes read: %d\n\n", results); 
-
-    // results = myread(readFilePtr, userReadBuf+5, 5); //USE TO TEST WHEN BUFF=10, FOR COUNT<BUFF_SIZE<BYTES IN FILE
-    // printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
-    // printf("bytes read: %d\n\n", results); 
-    
-    //use following two to check if you want case where second call uses rest of readBuf then makes syscall straight to buf BUFF_SIZE =10, readUserBuf =30
-    // results = myread(readFilePtr, userReadBuf, 7); 
-    // printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
-    // printf("bytes read: %d\n\n", results); 
-    // results = myread(readFilePtr, userReadBuf+7, 14); 
-    // printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
-    // printf("bytes read: %d\n\n", results); 
-
-    //use following two to check if you have want case where second call uses rest of readBuf then reads and memcpys per usual BUFF_SIZE =10, readUserBuf =30
-    // results = myread(readFilePtr, userReadBuf, 7); 
-    // //printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf);
-    // printf("fileOffset is %d\n",readFilePtr->fileOffset); 
-
-    // //printf("bytes read: %d\n\n", results); 
-    // results = myread(readFilePtr, userReadBuf+7, 10); 
-    // printf("fileOffset is %d\n",readFilePtr->fileOffset); 
-    //printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
-   //printf("bytes read: %d\n\n", results); 
-
-    //use following 2 to check, normal, end of readBuf, then refill readBuf but count>bytesLeft, BUFF_SIZE=20
-    // results = myread(readFilePtr, userReadBuf, 19); 
-    // printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
-    // printf("bytes read: %d\n\n", results); 
-    // results = myread(readFilePtr, userReadBuf+19, 6); 
-    // printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
-    // printf("bytes read: %d\n\n", results);
-    // results = myread(readFilePtr, userReadBuf+25, 1); 
-    // printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
-    // printf("bytes read: %d\n\n", results);
-    // results = myread(readFilePtr, userReadBuf+26, 2); 
-    // printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
-    // printf("bytes read: %d\n\n", results);
-
-    // results = myread(readFilePtr, userReadBuf, 30); // NEED TO TEST IT OUT WHEN YOU REQUEST MORE BYTES THAN THE FILE HAS 
-    // printf("***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
-    // printf("bytes read: %d\n\n", results); 
-
-
-
-    //TESTS FOR MYWRITE FUNCTION
-    // userWriteBuf = "If we see this, we wrote correctly!";
-    // writeFilePtr = myopen("writeTestFile",O_RDWR);
-    // results = mywrite(writeFilePtr, userWriteBuf, 5);
-    // printf("fileOffset is %d\n",writeFilePtr->fileOffset);
-    // // printf("bytes written: %d\n", results); 
-
-    // results = mywrite(writeFilePtr, userWriteBuf+5, 7);
-    // // printf("bytes written: %d\n", results); 
-    // printf("fileOffset is %d\n",writeFilePtr->fileOffset);
-
-    // results = mywrite(writeFilePtr, userWriteBuf+12, 10);
-    // // printf("bytes written: %d\n", results);
-    // printf("fileOffset is %d\n",writeFilePtr->fileOffset); 
-    // myclose(writeFilePtr); 
-
     return 0; 
 }
 
@@ -131,7 +34,7 @@ void testMyRead()
 
     total = 0; 
 
-    printf("\n-----TESTING myread-----\n"); 
+    printf("\n-----TESTING myread()-----\n"); 
     userReadBuf = malloc(30); 
 
     // Open the testfile
@@ -240,6 +143,11 @@ void testMyWrite()
     // printf("fileOffset is %d\n",writeFilePtr->fileOffset); 
 }
 
+/*
+    Tests for switching between myread and mywrite 
+
+    ASSUMPTIONS: BUFF_SIZE = 10, 
+*/
 void testMyReadAndMyWrite()
 {
     struct File *readFilePtr;
@@ -252,7 +160,7 @@ void testMyReadAndMyWrite()
     total = 0; 
     userWriteBuf = "If we see this, we wrote correctly!"; 
 
-    printf("\n-----TESTING myread-----\n"); 
+    printf("\n-----TESTING myread() and mywrite()-----\n"); 
     userReadBuf = malloc(30); 
 
     // Open the testfile
@@ -318,4 +226,42 @@ void testMyReadAndMyWrite()
     // Close the testfile 
     results = myclose(readFilePtr);
     printf("Closing readFilePtr results: %d\n", results); 
+}
+
+void testMySeek()
+{
+    struct File *filePtr;
+    char *userReadBuf;
+
+    printf("\n-----TESTING myseek()-----\n"); 
+
+
+    userReadBuf = malloc(30); 
+    filePtr = myopen("testfile",O_RDWR);
+    //printf("fd is %d readBuf pointer value is %p and readCP pointer value is %p \n",filePtr->fd, filePtr->readBuf, filePtr->readCP);
+    
+    //when myseek SEEK_SET 2:  "should ould we pu"
+    //when myseek SEEK_CUR 2:  "should  put stuff"
+    //when myseek SEEK_CUR -2: "should d we put s"
+    // NEED TO TEST WHEN SEEK_SET OR SEEK_CUR ARE SET TO VALUES OUTSIDE BUFF
+    printf("\nfileOffset: %ld\n", lseek(filePtr->fd, 0, SEEK_CUR));
+    printf("at the beginning readCP: %p\n", filePtr->CP);
+    
+    printf("Request to read 7 bytes\n");
+    myread(filePtr, userReadBuf, 7); 
+    printf("\tafter read 7 readCP: %p\n", filePtr->CP);
+    printf("\tfileOffset: %ld\n", lseek(filePtr->fd, 0, SEEK_CUR)); 
+   
+    printf("myseek\n"); 
+    myseek(filePtr, 12, SEEK_SET);
+    printf("\tafter myseek readCP: %p\n", filePtr->CP);
+    printf("\tfileOffset: %ld\n", lseek(filePtr->fd, 0, SEEK_CUR)); 
+    printf("\tbytesLeft (after): %d\n", filePtr->bytesLeft); 
+   
+    printf("Request to read 10 bytes\n");
+    myread(filePtr, userReadBuf + 7, 10); 
+    printf("\tafter read 10 readCP: %p\n", filePtr->CP);
+    printf("\tfileOffset: %ld\n", lseek(filePtr->fd, 0, SEEK_CUR)); 
+
+    printf("\n***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
 }
