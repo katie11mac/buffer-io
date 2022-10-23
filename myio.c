@@ -246,6 +246,8 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
     originalCount = count; 
     canWrite = 0;
     canRead = 0;
+    filePtr->bytesLeft = BUFF_SIZE - (filePtr->CP - filePtr->hiddenBuf); // need to initialize bytesLeft
+    printf("bytes left: %d\n", filePtr->bytesLeft); 
 
     if(((filePtr->flags & O_WRONLY) != 0) || ((filePtr->flags & O_RDWR) != 0))
     {
@@ -284,12 +286,10 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
             // {
             //     lseek(filePtr->fd,-BUFF_SIZE, SEEK_CUR);
             // }
-            printf("kernel's fileOffset = %ld\n", lseek(filePtr->fd, 0, SEEK_CUR));
+
             myflush(filePtr);
-            printf("kernel's fileOffset = %ld\n", lseek(filePtr->fd, 0, SEEK_CUR));
 
             count -= filePtr->bytesLeft; 
-
             //if count is still greater than or equal to BUFF_SIZE, syscall straight to file
             if (count >= BUFF_SIZE)
             {
@@ -342,7 +342,7 @@ void myflush(struct File *filePtr)
     //lseek(filePtr->fd, filePtr->fileOffset, SEEK_SET);
 
     bytesWritten = write(filePtr->fd, filePtr->hiddenBuf, filePtr->CP - filePtr->hiddenBuf);
-    printf("the size of our buff  = %ld\n",filePtr->CP - filePtr->hiddenBuf); 
+    //printf("the size of our buff = %ld\n",filePtr->CP - filePtr->hiddenBuf); 
 
     if(bytesWritten == -1)
     {
