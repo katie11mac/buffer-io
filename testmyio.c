@@ -48,6 +48,7 @@ void testMyRead()
     results = myread(readFilePtr, userReadBuf, 7);
     total += results; 
     printf("\trequested: 7, expected: 7\n\tbytes read: %d\n", results); 
+    printf("our fileOffset = %d and kernels fileOffset = %ld\n",readFilePtr->fileOffset, lseek(readFilePtr->fd,0,SEEK_CUR));
     printf("\tvalue of userReadBuf starting at %p: \'%s\'\n\n", userReadBuf, userReadBuf); 
 
     // TEST 2: Request count that uses the rest of readBuf and then makes syscall straight to buf 
@@ -56,12 +57,14 @@ void testMyRead()
     results = myread(readFilePtr, userReadBuf + total, 14); 
     total += results; 
     printf("\trequested: 14, expected: 14\n\tbytes read: %d\n", results); 
+    printf("our fileOffset = %d and kernels fileOffset = %ld\n",readFilePtr->fileOffset, lseek(readFilePtr->fd,0,SEEK_CUR));
     printf("\tvalue of userReadBuf starting at %p: \'%s\'\n\n", userReadBuf, userReadBuf); 
 
     // 
     results = myread(readFilePtr, userReadBuf + total, 4); 
     total += results; 
     printf("\trequested: 4, expected: 4\n\tbytes read: %d\n", results); 
+    printf("our fileOffset = %d and kernels fileOffset = %ld\n",readFilePtr->fileOffset, lseek(readFilePtr->fd,0,SEEK_CUR));
     printf("\tvalue of userReadBuf starting at %p: \'%s\'\n\n", userReadBuf, userReadBuf); 
 
     // TEST 3: Request amount smaller than bytesLeft when close to the end of the file, 
@@ -70,6 +73,7 @@ void testMyRead()
     results = myread(readFilePtr, userReadBuf + total, 1); 
     total += results; 
     printf("\trequested: 1, expected: 1\n\tbytes read: %d\n", results); 
+    printf("our fileOffset = %d and kernels fileOffset = %ld\n",readFilePtr->fileOffset, lseek(readFilePtr->fd,0,SEEK_CUR));
     printf("\tvalue of userReadBuf starting at %p: \'%s\'\n\n", userReadBuf, userReadBuf); 
 
     // TEST 4: Request amount larger than bytesLeft when there should only be one byte left in the file, 
@@ -78,6 +82,7 @@ void testMyRead()
     results = myread(readFilePtr, userReadBuf + total, 3); 
     total += results; 
     printf("\trequested: 3, expected: 1\n\tbytes read: %d\n", results); 
+    printf("our fileOffset = %d and kernels fileOffset = %ld\n",readFilePtr->fileOffset, lseek(readFilePtr->fd,0,SEEK_CUR));
     printf("\tvalue of userReadBuf starting at %p: \'%s\'\n\n", userReadBuf, userReadBuf); 
 
     // TEST 5: Try to read the file when all of the file has already been read, 
@@ -86,6 +91,7 @@ void testMyRead()
     results = myread(readFilePtr, userReadBuf + total, 2); 
     total += results; 
     printf("\trequested: 2, expected: 0\n\tbytes read: %d\n", results); 
+    printf("our fileOffset = %d and kernels fileOffset = %ld\n",readFilePtr->fileOffset, lseek(readFilePtr->fd,0,SEEK_CUR));
     printf("\tvalue of userReadBuf starting at %p: \'%s\'\n\n", userReadBuf, userReadBuf); 
 
     // Close the testfile 
@@ -118,6 +124,7 @@ void testMyWrite()
     results = mywrite(writeFilePtr, userWriteBuf, 5);
     total += results; 
     printf("\tbytes written: %d\n", results); 
+    printf("\tour fileOffset = %d and kernels fileOffset = %ld\n",writeFilePtr->fileOffset, lseek(writeFilePtr->fd,0,SEEK_CUR));
     printf("\tvalue of writeFilePtr starting at %p: \'%s\'\n\n", writeFilePtr->hiddenBuf, writeFilePtr->hiddenBuf); 
 
     // TEST 2: Write an amount of bytes larger than the space left in the file buffer
@@ -127,11 +134,13 @@ void testMyWrite()
     total += results; 
     printf("\tbytes written: %d\n", results); 
     // do we care about what is in the buffer tho? bc it can do a syscall during the function
+    printf("\tour fileOffset = %d and kernels fileOffset = %ld\n",writeFilePtr->fileOffset, lseek(writeFilePtr->fd,0,SEEK_CUR));
     printf("\tvalue of writeFilePtr starting at %p: \'%s\'\n\n", writeFilePtr->hiddenBuf, writeFilePtr->hiddenBuf); 
 
     results = mywrite(writeFilePtr, userWriteBuf + total, 23);
     total += results; 
     printf("\tbytes written: %d\n", results); 
+    printf("\tour fileOffset = %d and kernels fileOffset = %ld\n",writeFilePtr->fileOffset, lseek(writeFilePtr->fd,0,SEEK_CUR));
     printf("\tvalue of writeFilePtr starting at %p: \'%s\'\n\n", writeFilePtr->hiddenBuf, writeFilePtr->hiddenBuf); 
 
     // TEST 3: Closing and flushing writeBuf  
@@ -170,6 +179,7 @@ void testWriteRead()
     results = mywrite(readFilePtr, userWriteBuf, 5);
     total += results; 
     printf("\tbytes written: %d\n", results); 
+    printf("our fileOffset = %d and kernels fileOffset = %ld\n",readFilePtr->fileOffset, lseek(readFilePtr->fd,0,SEEK_CUR));
     printf("\tvalue of readFilePtr starting at %p: \'%s\'\n\n", readFilePtr->hiddenBuf, readFilePtr->hiddenBuf); 
 
     // TEST 2: Request count that uses the rest of readBuf and then makes syscall straight to buf 
@@ -178,6 +188,7 @@ void testWriteRead()
     results = myread(readFilePtr, userReadBuf + total, 14); 
     total += results; 
     printf("\tbytes read: %d\n", results); 
+    printf("our fileOffset = %d and kernels fileOffset = %ld\n",readFilePtr->fileOffset, lseek(readFilePtr->fd,0,SEEK_CUR));
     printf("\tvalue of userReadBuf starting at %p: \'%s\'\n\n", userReadBuf, userReadBuf); 
 
     // TEST 3: Try writing again
