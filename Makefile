@@ -10,4 +10,4 @@ testmyio.o: testmyio.c
 
 .PHONY: clean
 clean:
-	rm -f myio myio.o testmyio.o 
+	rm -f myio myio.o testmyio.o writefile

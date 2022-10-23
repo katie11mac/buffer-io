@@ -12,10 +12,10 @@ void testMySeek();
 
 int main(int argc, char *argv[])
 {
-    // testMyRead(); 
-    // testMyWrite(); 
-    // testWriteRead(); 
-    testReadWrite();
+    testMyRead(); 
+    testMyWrite(); 
+    testWriteRead(); 
+    // testReadWrite();
     //testMySeek(); 
    
     return 0; 
