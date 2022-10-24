@@ -12,9 +12,9 @@ void testMySeek();
 
 int main(int argc, char *argv[])
 {
-    //testMyRead(); //file offset lines up
+    testMyRead(); //file offset lines up
     testMyWrite(); 
-    //testWriteRead(); 
+    testWriteRead(); 
     // testReadWrite();
     //testMySeek(); 
    

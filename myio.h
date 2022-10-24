@@ -10,6 +10,8 @@ struct File
     int flags;
     int bytesLeft;
     int fileOffset;
+    int haveWritten; //to hiddenBuf
+    int haveRead; //to hiddenBuf
 };
 
 int myclose(struct File *filePtr);
