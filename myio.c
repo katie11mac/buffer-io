@@ -50,8 +50,11 @@ int myclose(struct File *filePtr)
 {
 
     int results; 
-
-    myflush(filePtr); 
+    
+    if(filePtr->haveWritten == 1)
+    {
+        myflush(filePtr); 
+    }
 
     if ((results = close(filePtr->fd)) == -1)
     {
@@ -137,6 +140,7 @@ int myread(struct File *filePtr, char *buf, size_t count)
             //move forward the amount we've read
             lseek(filePtr->fd, filePtr->fileOffset, SEEK_SET);
             //read bytesLeft amount from fileOffset to hiddenBuf
+            printf("bytesLeft after write = %d\n",filePtr->bytesLeft);
             read(filePtr->fd, filePtr->CP, filePtr->bytesLeft);
             filePtr->haveRead = 1;
             printf("this is whats in our hiddenBuf = %s\n",filePtr->hiddenBuf);
@@ -254,6 +258,7 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
             filePtr->fileOffset += count;
             filePtr->CP += count;
             filePtr->haveWritten = 1;
+            filePtr->bytesLeft -= count;
             count = 0;
         }
         // Case when count is greater the size left in our hiddenBuf
@@ -287,7 +292,9 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
                 filePtr->fileOffset += count;
                 filePtr->CP += count;
                 filePtr->haveWritten = 1;
+                filePtr->bytesLeft -= count;
             }
+            
 
             count = 0;
         }
@@ -317,12 +324,17 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
 void myflush(struct File *filePtr)
 {
     int bytesWritten;
+    // printf("Kernel Offset when flushing: %ld\n", lseek(filePtr->fd, 0, SEEK_CUR)); 
+    // printf("Our Offset when flushing: %d\n", filePtr->fileOffset); 
 
     if(filePtr->haveWritten == 1 && filePtr->haveRead == 1)
     {
         printf("we are moving backwards = %ld\n",-(filePtr->CP - filePtr->hiddenBuf));
-        lseek(filePtr->fd, -(filePtr->CP - filePtr->hiddenBuf), SEEK_SET);
+        lseek(filePtr->fd, -(filePtr->CP - filePtr->hiddenBuf), SEEK_CUR);
     }
+
+    // printf("Kernel Offset when flushing: %ld\n", lseek(filePtr->fd, 0, SEEK_CUR)); 
+    // printf("Our Offset when flushing: %d\n", filePtr->fileOffset); 
 
     bytesWritten = write(filePtr->fd, filePtr->hiddenBuf, filePtr->CP - filePtr->hiddenBuf);
     //printf("the size of our buff = %ld\n",filePtr->CP - filePtr->hiddenBuf); 
@@ -354,18 +366,26 @@ int myseek(struct File *filePtr, int offset, int whence)
         }
         else
         {
-            myflush(filePtr);
-            lseek(filePtr->fd, offset, whence); 
+            printf("SEEK_CUR out of bounds\n");
+            if(filePtr->haveWritten == 1)
+            {
+                myflush(filePtr);
+            }
+            else
+            {
+                filePtr->CP = filePtr->hiddenBuf;
+            }
+            lseek(filePtr->fd, filePtr->fileOffset+offset, SEEK_SET); 
         }
         filePtr->fileOffset += offset;
     }
     else if(whence == SEEK_SET)
     {
-
-        moveOffset = offset - (lseek(filePtr->fd, 0, SEEK_CUR)-filePtr->bytesLeft);
+        // determine amount offset moves our kernel offset
+        moveOffset = offset - filePtr->fileOffset;
         printf("moveOffset: %d\n", moveOffset); 
 
-        if((filePtr->CP + moveOffset > filePtr->hiddenBuf) && (filePtr->CP + moveOffset < (filePtr->CP +filePtr->bytesLeft)))
+        if((filePtr->CP + moveOffset > filePtr->hiddenBuf) && (filePtr->CP + moveOffset < (filePtr->CP + filePtr->bytesLeft)))
         {
             printf("WITHIN BOUNDS\n");            
             filePtr->CP += moveOffset;
@@ -374,7 +394,14 @@ int myseek(struct File *filePtr, int offset, int whence)
         }
         else
         {
-            myflush(filePtr);
+            if(filePtr->haveWritten == 1)
+            {
+                myflush(filePtr);
+            }
+            else
+            {
+                filePtr->CP = filePtr->hiddenBuf;
+            }
             lseek(filePtr->fd, offset, whence); 
         }
         filePtr->fileOffset = offset;
