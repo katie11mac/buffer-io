@@ -16,18 +16,18 @@ void testWriteSeekRead();
 int main(int argc, char *argv[])
 {
     //testMyRead(); //file offset lines up
-    //testMyWrite(); 
-    // testWriteRead(); 
+    //testMyWrite();
+    // testWriteRead();
     // testReadWrite();
-    testMySeekRead(); 
-    testMySeekWrite(); 
+    testMySeekRead();
+    testMySeekWrite();
     testWriteSeekRead();
    
-    return 0; 
+    return 0;
 }
 
 /*
-    Tests for myread() in myio.c
+    Tests for myopen(), myread(), and myclose() in myio.c
 
     ASSUMPTIONS: BUFF_SIZE = 10, userReadBuf = 30, 
     and testfile has 27 bytes
@@ -105,7 +105,7 @@ void testMyRead()
 }
 
 /*
-    Small test for myopen and more tests for mywrite() in myio.c 
+    Tests for myopen, myclose(), and mywrite() in myio.c 
 
     ASSUMPTIONS: BUFF_SIZE is 10
 */
@@ -113,19 +113,19 @@ void testMyWrite()
 {
     struct File *writeFilePtr;
     char *userWriteBuf;
-    int results; 
-    int total; 
+    int results;
+    int total;
 
-    total = 0; 
+    total = 0;
 
-    printf("\n-----TESTING mywrite()-----\n"); 
+    printf("\n-----TESTING mywrite()-----\n");
 
-    userWriteBuf = "If we see this, we wrote correctly!"; 
+    userWriteBuf = "If we see this, we wrote correctly!";
 
-    writeFilePtr = myopen("writefile", O_CREAT | O_RDWR); 
+    writeFilePtr = myopen("writefile", O_CREAT | O_RDWR);
 
     // TEST 1: Write an amount of bytes smaller than the BUFF_SIZE, which will not complete a syscall
-    printf("TEST 1\n"); 
+    printf("TEST 1\n");
     results = mywrite(writeFilePtr, userWriteBuf, 5);
     total += results; 
     printf("\tbytes written: %d\n", results); 
@@ -224,7 +224,6 @@ void testReadWrite()
     char *userReadBuf;
     int results; 
     int total; 
-
     char *userWriteBuf;
 
     total = 0; 

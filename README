@@ -1,12 +1,13 @@
 Authors: Katie Macalintal and Lindsey Schweitzer 
 
-Test We've Tried:
-- 
-
-Known Bugs: 
+Known Bugs: N/A
 
 Resources: 
 https://www.tutorialspoint.com/cprogramming/c_structures.htm 
 https://www.educative.io/answers/resolving-the-expected-specifier-qualifier-list-before-error 
 https://stackoverflow.com/questions/2524611/how-can-one-print-a-size-t-variable-portably-using-the-printf-family
+https://stackoverflow.com/questions/23440921/allocate-struct-on-the-heap-in-c
+Default write behaviour - O_TRUNC or O_APPEND?https://stackoverflow.com › questions › default-write-be...
+https://stackoverflow.com/questions/19365109/using-o-rdwr-vs-o-rdonly-o-wronly
+https://www.geeksforgeeks.org/lseek-in-c-to-read-the-alternate-nth-byte-and-write-it-in-another-file/
 

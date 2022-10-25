@@ -10,7 +10,7 @@
 #include "myio.h"
 
 /*
-* Opens a file located at the pathname and returns the file descriptor. 
+* Opens a file located at the pathname and returns the file struct pointer 
 */
 struct File * myopen(const char *pathname, int flags)
 {
@@ -40,7 +40,7 @@ struct File * myopen(const char *pathname, int flags)
     filePtr->haveWritten = 0;
     filePtr->haveRead = 0;
 
-    return filePtr; 
+    return filePtr;
 }
 
 /*
@@ -48,20 +48,19 @@ struct File * myopen(const char *pathname, int flags)
 */
 int myclose(struct File *filePtr)
 {
-
-    int results; 
+    int results;
     
     if(filePtr->haveWritten == 1)
     {
-        myflush(filePtr); 
+        myflush(filePtr);
     }
 
     if ((results = close(filePtr->fd)) == -1)
     {
-        perror("close"); 
+        perror("close");
     } 
 
-    return results; 
+    return results;
 }
 
 /*
@@ -135,17 +134,14 @@ int myread(struct File *filePtr, char *buf, size_t count)
     //second case: when readBuf isn't empty
     else
     {
-        if(filePtr->haveRead == 0) 
+        if(filePtr->haveRead == 0)
         {
             //move forward the amount we've read
             lseek(filePtr->fd, filePtr->fileOffset, SEEK_SET);
             //read bytesLeft amount from fileOffset to hiddenBuf
-            printf("bytesLeft after write = %d\n",filePtr->bytesLeft);
             read(filePtr->fd, filePtr->CP, filePtr->bytesLeft);
             filePtr->haveRead = 1;
-            printf("this is whats in our hiddenBuf = %s\n",filePtr->hiddenBuf);
         }
-        printf("RUNNING THE ELSE\n"); 
        //normal case: when count is less than unread bytes in readBuf (bytesLeft) 
         if(count < filePtr->bytesLeft)
         {
@@ -231,6 +227,7 @@ int myread(struct File *filePtr, char *buf, size_t count)
     return userBytesRead;
     
 }
+
 /*
 * Writes count bytes from buf into the fd 
 */
@@ -238,10 +235,10 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
 {
     int originalCount, bytesWritten;
 
-    originalCount = count; 
+    originalCount = count;
 
     filePtr->bytesLeft = BUFF_SIZE - (filePtr->CP - filePtr->hiddenBuf); // need to initialize bytesLeft
-    printf("bytes left: %d\n", filePtr->bytesLeft); 
+    printf("bytes left: %d\n", filePtr->bytesLeft);
 
     if(!(((filePtr->flags & O_WRONLY) == 0) || ((filePtr->flags & O_RDWR) == 0)))
     {
@@ -264,7 +261,6 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
         // Case when count is greater the size left in our hiddenBuf
         else
         {
-            printf("this is what is runnning\n");
             memcpy(filePtr->CP, buf, filePtr->bytesLeft);
             filePtr->fileOffset += filePtr->bytesLeft;
             filePtr->CP += filePtr->bytesLeft;
@@ -272,7 +268,7 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
 
             myflush(filePtr);
 
-            count -= filePtr->bytesLeft; 
+            count -= filePtr->bytesLeft;
             //if count is still greater than or equal to BUFF_SIZE, syscall straight to file
             if (count >= BUFF_SIZE)
             {
@@ -295,10 +291,9 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
                 filePtr->bytesLeft -= count;
             }
             
-
             count = 0;
         }
-        return originalCount - count; 
+        return originalCount - count;
     }
     // if count is bigger than hiddenBuf we do syscall automatically
     else
@@ -313,42 +308,41 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
             exit(3);
         }
 
-        return bytesWritten; 
+        return bytesWritten;
     }
     
 }
 
 /*
 * Forces any buffered data to the destination fd 
+* ------ only flush if have written to buff (haveWritten == 1)
 */ 
 void myflush(struct File *filePtr)
 {
     int bytesWritten;
-    // printf("Kernel Offset when flushing: %ld\n", lseek(filePtr->fd, 0, SEEK_CUR)); 
-    // printf("Our Offset when flushing: %d\n", filePtr->fileOffset); 
 
+    //move kernel offset backwards if we have written and read to the buffer
     if(filePtr->haveWritten == 1 && filePtr->haveRead == 1)
     {
-        printf("we are moving backwards = %ld\n",-(filePtr->CP - filePtr->hiddenBuf));
         lseek(filePtr->fd, -(filePtr->CP - filePtr->hiddenBuf), SEEK_CUR);
     }
 
-    // printf("Kernel Offset when flushing: %ld\n", lseek(filePtr->fd, 0, SEEK_CUR)); 
-    // printf("Our Offset when flushing: %d\n", filePtr->fileOffset); 
-
+    //this writes to the file and moves kernel offset back forwards
     bytesWritten = write(filePtr->fd, filePtr->hiddenBuf, filePtr->CP - filePtr->hiddenBuf);
-    //printf("the size of our buff = %ld\n",filePtr->CP - filePtr->hiddenBuf); 
 
     if(bytesWritten == -1)
     {
         perror("write");
         exit(2);
-    } 
+    }
     filePtr->CP = filePtr->hiddenBuf;
     filePtr->haveWritten = 0;
     filePtr->haveRead = 0;
 }
 
+/*
+* Changes where we are in our file accordingly- moves CP and fileOffset or kernel offset and fileOffset
+*/
 int myseek(struct File *filePtr, int offset, int whence)
 {
    int moveOffset;
@@ -365,17 +359,20 @@ int myseek(struct File *filePtr, int offset, int whence)
             filePtr->bytesLeft -= offset;
         }
         else
-        {
-            printf("SEEK_CUR out of bounds\n");
+        { 
+            //out of bounds for hiddenbuf
+
+            //if we've written to the hiddenBuf, flush before moving kernel offset
             if(filePtr->haveWritten == 1)
             {
                 myflush(filePtr);
             }
             else
             {
+                //reset CP to the beginning of the hiddenBuf
                 filePtr->CP = filePtr->hiddenBuf;
             }
-            lseek(filePtr->fd, filePtr->fileOffset+offset, SEEK_SET); 
+            lseek(filePtr->fd, filePtr->fileOffset+offset, SEEK_SET);
         }
         filePtr->fileOffset += offset;
     }
@@ -383,11 +380,10 @@ int myseek(struct File *filePtr, int offset, int whence)
     {
         // determine amount offset moves our kernel offset
         moveOffset = offset - filePtr->fileOffset;
-        printf("moveOffset: %d\n", moveOffset); 
+        printf("moveOffset: %d\n", moveOffset);
 
         if((filePtr->CP + moveOffset > filePtr->hiddenBuf) && (filePtr->CP + moveOffset < (filePtr->CP + filePtr->bytesLeft)))
-        {
-            printf("WITHIN BOUNDS\n");            
+        {  
             filePtr->CP += moveOffset;
             printf("bytesLeft= %d\n",filePtr->bytesLeft);
             filePtr->bytesLeft -= moveOffset;
@@ -402,7 +398,7 @@ int myseek(struct File *filePtr, int offset, int whence)
             {
                 filePtr->CP = filePtr->hiddenBuf;
             }
-            lseek(filePtr->fd, offset, whence); 
+            lseek(filePtr->fd, offset, whence);
         }
         filePtr->fileOffset = offset;
     }
