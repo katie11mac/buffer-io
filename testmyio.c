@@ -279,12 +279,12 @@ void testMySeekRead()
     filePtr = myopen("testfile",O_RDWR);
     
     printf("\nfileOffset: %ld\n", lseek(filePtr->fd, 0, SEEK_CUR));
-    printf("at the beginning readCP: %p\n", filePtr->CP);
+    printf("at the beginning readCP: %p\n", filePtr->currPtr);
     
     printf("Request to read 7 bytes\n");
     bytesRead = myread(filePtr, userReadBuf, 14); //change this line
     printf("\tbytesRead: %d\n", bytesRead); 
-    printf("\tafter read 7 readCP: %p\n", filePtr->CP);
+    printf("\tafter read 7 readCP: %p\n", filePtr->currPtr);
     printf("\tfileOffset: %ld\n", lseek(filePtr->fd, 0, SEEK_CUR)); 
    
     // CHANGE THIS SECTION OF CODE ACCORDINGLY FOR TESTS
@@ -297,7 +297,7 @@ void testMySeekRead()
     // NEED TO TEST WHEN SEEK_SET OR SEEK_CUR ARE SET TO VALUES OUTSIDE BUFF
     printf("\nmyseek\n"); 
     myseek(filePtr, -5, SEEK_CUR);
-    printf("\tafter myseek readCP: %p\n", filePtr->CP);
+    printf("\tafter myseek readCP: %p\n", filePtr->currPtr);
     printf("\tfileOffset: %ld\n", lseek(filePtr->fd, 0, SEEK_CUR)); 
     printf("\tbytesLeft (after): %d\n", filePtr->bytesLeft); 
     // -------------------------------------------------
@@ -305,7 +305,7 @@ void testMySeekRead()
     printf("\nRequest to read 10 bytes\n");
     bytesRead = myread(filePtr, userReadBuf + 14, 10); 
     printf("\tbytesRead: %d\n", bytesRead); 
-    printf("\tafter read 10 readCP: %p\n", filePtr->CP);
+    printf("\tafter read 10 readCP: %p\n", filePtr->currPtr);
     printf("\tfileOffset: %ld\n", lseek(filePtr->fd, 0, SEEK_CUR)); 
 
     printf("\n***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
@@ -323,12 +323,12 @@ void testMySeekWrite()
     filePtr = myopen("testSeekWrite", O_CREAT | O_RDWR);
     
     printf("\nfileOffset: %ld\n", lseek(filePtr->fd, 0, SEEK_CUR));
-    printf("at the beginning readCP: %p\n", filePtr->CP);
+    printf("at the beginning readCP: %p\n", filePtr->currPtr);
     
     printf("Request to write 15 bytes\n");
     bytesWritten = mywrite(filePtr, userWriteBuf, 15); //change this line
     printf("\tbytesWritten: %d\n", bytesWritten); 
-    printf("\tafter write 15 CP: %p\n", filePtr->CP);
+    printf("\tafter write 15 CP: %p\n", filePtr->currPtr);
     printf("\tfileOffset: %ld\n", lseek(filePtr->fd, 0, SEEK_CUR)); 
    
     // CHANGE THIS SECTION OF CODE ACCORDINGLY FOR TESTS
@@ -339,7 +339,7 @@ void testMySeekWrite()
     //when myseek SEEK_CUR 6:  "Its our future       Carol. Fig" (tests the else of SEEK_CUR)
     printf("\nmyseek\n"); 
     myseek(filePtr, 6, SEEK_CUR);
-    printf("\tafter myseek CP: %p\n", filePtr->CP);
+    printf("\tafter myseek currPtr: %p\n", filePtr->currPtr);
     printf("\tfileOffset: %ld\n", lseek(filePtr->fd, 0, SEEK_CUR)); 
     printf("\tbytesLeft (after): %d\n", filePtr->bytesLeft); 
     // -------------------------------------------------
@@ -347,7 +347,7 @@ void testMySeekWrite()
     printf("\nRequest to read 10 bytes\n");
     bytesWritten = mywrite(filePtr, userWriteBuf + 15, 10); 
     printf("\tbytesWritten: %d\n", bytesWritten); 
-    printf("\tafter write 10 CP: %p\n", filePtr->CP);
+    printf("\tafter write 10 currPtr: %p\n", filePtr->currPtr);
     printf("\tfileOffset: %ld\n", lseek(filePtr->fd, 0, SEEK_CUR)); 
 
     printf("\n***this is whats in the userWriteBuf at %p: %s***\n", userWriteBuf, userWriteBuf); 
@@ -388,7 +388,7 @@ void testWriteSeekRead()
     // TEST 1.5: myseek()
     printf("\nmyseek\n"); 
     myseek(readFilePtr, 6, SEEK_CUR);
-    printf("\tafter myseek CP: %p\n", readFilePtr->CP);
+    printf("\tafter myseek currPtr: %p\n", readFilePtr->currPtr);
     printf("\tfileOffset: %ld\n", lseek(readFilePtr->fd, 0, SEEK_CUR)); 
     printf("\tbytesLeft (after): %d\n", readFilePtr->bytesLeft); 
 
