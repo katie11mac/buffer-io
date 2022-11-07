@@ -7,6 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
 #include "myio.h"
 
 /*
@@ -76,6 +77,7 @@ int myread(struct File *filePtr, char *buf, size_t count)
 
     if(!(((filePtr->flags & O_RDONLY) != 0) || ((filePtr->flags & O_RDWR) != 0)))
     {
+        errno = EBADF;
         return -1;
     }
 
@@ -243,6 +245,7 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
 
     if(!(((filePtr->flags & O_WRONLY) == 0) || ((filePtr->flags & O_RDWR) == 0)))
     {
+        errno = EBADF;
         return -1;
     }
 
