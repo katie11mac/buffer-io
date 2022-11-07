@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
+
 
 void testMyRead(); 
 void testMyWrite();
@@ -102,6 +104,8 @@ void testMyRead()
     // Close the testfile 
     results = myclose(readFilePtr);
     printf("Closing readFilePtr results: %d\n", results); 
+
+    free(userReadBuf);
 }
 
 /*
@@ -209,7 +213,7 @@ void testWriteRead()
     printf("writereadfile contents should be: If wed we put stuff see t?!\n"); 
 
     // Expected outcome with TEST 3: If wed we put stuff see t?! 
-
+    free(userReadBuf);
 }
 
 /*
@@ -264,19 +268,20 @@ void testReadWrite()
     printf("readwritefile contents should be: should If wet stuff in it?!\n"); 
 
     // Expected outcome with TEST 3: should If wet stuff in it?!
-
+    free(userReadBuf);
 }
 
 void testMySeekRead()
 {
     struct File *filePtr;
-    char *userReadBuf;
+    char *userReadBuf, *nullByte;
     int bytesRead; 
 
     printf("\n-----TESTING myseek()-----\n"); 
 
     userReadBuf = malloc(30); 
     filePtr = myopen("testfile",O_RDWR);
+    nullByte = "\0";
     
     printf("\nfileOffset: %ld\n", lseek(filePtr->fd, 0, SEEK_CUR));
     printf("at the beginning readCP: %p\n", filePtr->currPtr);
@@ -304,11 +309,16 @@ void testMySeekRead()
 
     printf("\nRequest to read 10 bytes\n");
     bytesRead = myread(filePtr, userReadBuf + 14, 10); 
+    memcpy(userReadBuf, nullByte, 1);
     printf("\tbytesRead: %d\n", bytesRead); 
     printf("\tafter read 10 readCP: %p\n", filePtr->currPtr);
     printf("\tfileOffset: %ld\n", lseek(filePtr->fd, 0, SEEK_CUR)); 
 
     printf("\n***this is whats in the userReadBuf at %p: %s***\n", userReadBuf, userReadBuf); 
+
+    myclose(filePtr);
+    free(userReadBuf);
+
 }
 
 void testMySeekWrite()
@@ -338,7 +348,7 @@ void testMySeekWrite()
     //when myseek SEEK_SET 13: "Its our futurCarol. Fig" (test the if of SEEK_SET)
     //when myseek SEEK_CUR 6:  "Its our future       Carol. Fig" (tests the else of SEEK_CUR)
     printf("\nmyseek\n"); 
-    myseek(filePtr, 6, SEEK_CUR);
+    myseek(filePtr, -2, SEEK_CUR);
     printf("\tafter myseek currPtr: %p\n", filePtr->currPtr);
     printf("\tfileOffset: %ld\n", lseek(filePtr->fd, 0, SEEK_CUR)); 
     printf("\tbytesLeft (after): %d\n", filePtr->bytesLeft); 
@@ -350,7 +360,9 @@ void testMySeekWrite()
     printf("\tafter write 10 currPtr: %p\n", filePtr->currPtr);
     printf("\tfileOffset: %ld\n", lseek(filePtr->fd, 0, SEEK_CUR)); 
 
-    printf("\n***this is whats in the userWriteBuf at %p: %s***\n", userWriteBuf, userWriteBuf); 
+    printf("\n***this is whats in the userWriteBuf at %p: %s***\n", userWriteBuf, userWriteBuf);
+
+    myclose(filePtr);
 }
 
 /*
@@ -383,7 +395,7 @@ void testWriteSeekRead()
     results = myread(readFilePtr, userReadBuf, 14); 
     printf("\tbytes read: %d\n", results); 
     printf("\tour fileOffset = %d and kernels fileOffset = %ld\n",readFilePtr->fileOffset, lseek(readFilePtr->fd,0,SEEK_CUR));
-    printf("\tvalue of userReadBuf starting at %p: \'%s\'\n\n", userReadBuf, userReadBuf); 
+    // printf("\tvalue of userReadBuf starting at %p: \'%s\'\n\n", userReadBuf, userReadBuf); 
 
     // TEST 1.5: myseek()
     printf("\nmyseek\n"); 
@@ -398,7 +410,7 @@ void testWriteSeekRead()
      total += results; 
     printf("\tbytes written: %d\n", results); 
     printf("\tour fileOffset = %d and kernels fileOffset = %ld\n",readFilePtr->fileOffset, lseek(readFilePtr->fd,0,SEEK_CUR));
-    printf("\tvalue of readFilePtr starting at %p: \'%s\'\n\n", readFilePtr->hiddenBuf, readFilePtr->hiddenBuf); 
+    // printf("\tvalue of readFilePtr starting at %p: \'%s\'\n\n", readFilePtr->hiddenBuf, readFilePtr->hiddenBuf); 
 
     // TEST 3: Try writing again
     // printf("TEST 3: WRITE \n"); 
@@ -413,5 +425,6 @@ void testWriteSeekRead()
     printf("Closing readFilePtr results: %d\n", results); 
 
     // Expected outcome with TEST 3: If wed we put stuff see t?! 
+    free(userReadBuf);
 
 }
