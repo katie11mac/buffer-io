@@ -75,7 +75,7 @@ int myread(struct File *filePtr, char *buf, size_t count)
     
     userBytesRead = 0;
 
-    if(!(((filePtr->flags & O_RDONLY) != 0) || ((filePtr->flags & O_RDWR) != 0)))
+    if(!(((filePtr->flags & O_RDONLY) == 0) || ((filePtr->flags & O_RDWR) != 0))) //!!!!
     {
         errno = EBADF;
         return -1;
@@ -95,7 +95,8 @@ int myread(struct File *filePtr, char *buf, size_t count)
                 return -1;
             }
             userBytesRead = bytesRead;
-            filePtr->currPtr = filePtr->hiddenBuf; //reset currPtr after each new read
+            //reset currPtr after each new read
+            filePtr->currPtr = filePtr->hiddenBuf;
         }
         //if count is smaller than readBuf, fill readBuf then give bytes to user
         else
@@ -114,18 +115,14 @@ int myread(struct File *filePtr, char *buf, size_t count)
             if(bytesRead < count)
             {
                 memcpy(buf, filePtr->hiddenBuf, bytesRead);
-                filePtr->fileOffset += bytesRead;
-                filePtr->currPtr += bytesRead;
-                filePtr->bytesLeft = 0;
+                updateFilePtrFields(filePtr, bytesRead, bytesRead, -(filePtr->bytesLeft));
                 userBytesRead = bytesRead;
             }
             //if bytesRead is greater than/equal to count, give user count
             else
             {
                 memcpy(buf, filePtr->hiddenBuf, count);
-                filePtr->fileOffset += count;
-                filePtr->currPtr += count;
-                filePtr->bytesLeft -= count;
+                updateFilePtrFields(filePtr, count, count, -count);
                 userBytesRead = count;
             }
         }
@@ -153,17 +150,14 @@ int myread(struct File *filePtr, char *buf, size_t count)
         if(count < filePtr->bytesLeft)
         {
             memcpy(buf, filePtr->currPtr, count);
-            filePtr->fileOffset += count;
-            filePtr->currPtr += count;
-            filePtr->bytesLeft -= count;
+            updateFilePtrFields(filePtr, count, count, -(count));
             userBytesRead = count;
         }
         //special case: when count is greater than or equal to the unread bytes in readBuf (bytesLeft)
         else
         {
             memcpy(buf, filePtr->currPtr, filePtr->bytesLeft);
-            filePtr->fileOffset += filePtr->bytesLeft;
-            filePtr->currPtr += filePtr->bytesLeft;
+            updateFilePtrFields(filePtr, filePtr->bytesLeft, filePtr->bytesLeft, 0);
             count -= filePtr->bytesLeft;
             userBytesRead += filePtr->bytesLeft;
 
@@ -181,6 +175,7 @@ int myread(struct File *filePtr, char *buf, size_t count)
                 {
                     return -1;
                 }
+
                 filePtr->fileOffset += count;
                 userBytesRead += bytesRead;
                 filePtr->currPtr = filePtr->hiddenBuf; //reset currPtr after each new read
@@ -207,18 +202,14 @@ int myread(struct File *filePtr, char *buf, size_t count)
                 if(bytesRead < count)
                 {
                     memcpy(buf+userBytesRead, filePtr->currPtr, bytesRead);
-                    filePtr->fileOffset += bytesRead;
-                    filePtr->currPtr += bytesRead;
-                    filePtr->bytesLeft = 0;
+                    updateFilePtrFields(filePtr, bytesRead, bytesRead, -(filePtr->bytesLeft));
                     userBytesRead += bytesRead;
                 }
                 //if bytesRead is greater than/equal to count, give user count
                 else
                 {
                     memcpy(buf+userBytesRead, filePtr->currPtr, count);
-                    filePtr->fileOffset += count;
-                    filePtr->currPtr += count;
-                    filePtr->bytesLeft -= count;
+                    updateFilePtrFields(filePtr, count, count, -(count));
                     userBytesRead += count;
                 }
             }
@@ -230,6 +221,16 @@ int myread(struct File *filePtr, char *buf, size_t count)
     
     return userBytesRead;
     
+}
+
+/*
+* Update fields in the struct filePtr
+*/
+void updateFilePtrFields(struct File *filePtr, int incrementOffset, int incrementCurrPtr, int incrementBytesLeft)
+{
+    filePtr->fileOffset += incrementOffset;
+    filePtr->currPtr += incrementCurrPtr;
+    filePtr->bytesLeft += incrementBytesLeft;
 }
 
 /*

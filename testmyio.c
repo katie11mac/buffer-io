@@ -17,10 +17,10 @@ void testWriteSeekRead();
 
 int main(int argc, char *argv[])
 {
-    //testMyRead(); //file offset lines up
-    //testMyWrite();
-    // testWriteRead();
-    // testReadWrite();
+    testMyRead(); //file offset lines up
+    // testMyWrite();
+    testWriteRead();
+    testReadWrite();
     testMySeekRead();
     testMySeekWrite();
     testWriteSeekRead();
@@ -47,7 +47,7 @@ void testMyRead()
     userReadBuf = malloc(30); 
 
     // Open the testfile
-    readFilePtr = myopen("testfile", O_RDWR); // testfile has 27 characters 
+    readFilePtr = myopen("testfile", O_RDONLY); // testfile has 27 characters 
     
     // TEST 1: Request count smaller than buff size and smaller than file size, 
     // so count < BUFF_SIZE < total bytes in file 

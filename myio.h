@@ -4,7 +4,6 @@
 #define BUFF_SIZE 10
 #include <stddef.h>
 
-struct File * myopen(const char *pathname, int flags);
 struct File
 {
     int fd;
@@ -17,8 +16,10 @@ struct File
     int haveRead; //to hiddenBuf
 };
 
+struct File * myopen(const char *pathname, int flags);
 int myclose(struct File *filePtr);
 int myread(struct File *filePtr, char *buf, size_t count);
+void updateFilePtrFields(struct File *filePtr, int incrementOffset, int incrementCurrPtr, int incrementBytesLeft);
 int mywrite(struct File *filePtr, char *buf, size_t count); 
 int myflush(struct File *filePtr);
 int myseek(struct File *filePtr, int offset, int whence); 
