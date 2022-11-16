@@ -2,6 +2,11 @@ Authors: Katie Macalintal and Lindsey Schweitzer
 
 Known Bugs: N/A
 
+Questions to Ask: 
+- RDONLY 
+- Our tests are working for intermingled read and writes
+- Did we make it concise enough with those changes 
+
 Resources: 
 https://www.tutorialspoint.com/cprogramming/c_structures.htm 
 https://www.educative.io/answers/resolving-the-expected-specifier-qualifier-list-before-error 

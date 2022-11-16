@@ -57,6 +57,7 @@ int myclose(struct File *filePtr)
 
     if ((results = close(filePtr->fd)) == -1)
     {
+        free(filePtr);
         return -1;
     } 
 
@@ -127,8 +128,6 @@ int myread(struct File *filePtr, char *buf, size_t count)
             }
         }
     }
-    
-    
     //second case: when readBuf isn't empty
     else
     {
