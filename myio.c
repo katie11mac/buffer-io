@@ -76,7 +76,7 @@ int myread(struct File *filePtr, char *buf, size_t count)
     
     userBytesRead = 0;
 
-    if(!(((filePtr->flags & O_RDONLY) == 0) || ((filePtr->flags & O_RDWR) != 0))) //!!!!
+    if(!(((filePtr->flags & O_RDONLY) == 0) || ((filePtr->flags & O_RDWR) != 0)))
     {
         errno = EBADF;
         return -1;
@@ -108,8 +108,10 @@ int myread(struct File *filePtr, char *buf, size_t count)
             {
                 return -1;
             }
-            filePtr->bytesLeft = bytesRead; //bytes unread in readBuf = bytes just read into readBuf
-            filePtr->currPtr = filePtr->hiddenBuf; //reset currPtr after each new read
+            //bytes unread in readBuf = bytes just read into readBuf
+            filePtr->bytesLeft = bytesRead;
+            //reset currPtr after each new read
+            filePtr->currPtr = filePtr->hiddenBuf;
             filePtr->haveRead = 1;
 
             //if bytesRead is less than count, give user bytesRead
@@ -177,7 +179,8 @@ int myread(struct File *filePtr, char *buf, size_t count)
 
                 filePtr->fileOffset += count;
                 userBytesRead += bytesRead;
-                filePtr->currPtr = filePtr->hiddenBuf; //reset currPtr after each new read
+                //reset currPtr after each new read
+                filePtr->currPtr = filePtr->hiddenBuf;
             }
             //if count is less than BUFF_SIZE, read then read and memcpy (normal protocal)
             else
@@ -187,14 +190,19 @@ int myread(struct File *filePtr, char *buf, size_t count)
                 {
                     myflush(filePtr);
                 }
-                bytesRead = read(filePtr->fd, filePtr->hiddenBuf, BUFF_SIZE); //read from offset
+
+                //read from offset
+                bytesRead = read(filePtr->fd, filePtr->hiddenBuf, BUFF_SIZE);
 
                 if(bytesRead == -1)
                 {
                     return -1;
                 }
-                filePtr->bytesLeft = bytesRead; //bytes unread in readBuf = bytes just read into readBuf
-                filePtr->currPtr = filePtr->hiddenBuf; //reset currPtr after each new read
+
+                //bytes unread in readBuf = bytes just read into readBuf
+                filePtr->bytesLeft = bytesRead;
+                //reset currPtr after each new read
+                filePtr->currPtr = filePtr->hiddenBuf;
                 filePtr->haveRead = 1;
 
                 //if bytesRead is less than count, give user bytesRead
@@ -212,14 +220,10 @@ int myread(struct File *filePtr, char *buf, size_t count)
                     userBytesRead += count;
                 }
             }
-
         }
-        
-
     }
     
     return userBytesRead;
-    
 }
 
 /*
@@ -339,9 +343,11 @@ int myflush(struct File *filePtr)
     {
         return -1;
     }
+
     filePtr->currPtr = filePtr->hiddenBuf;
     filePtr->haveWritten = 0;
     filePtr->haveRead = 0;
+
     return 0;
 }
 
@@ -354,7 +360,7 @@ int myseek(struct File *filePtr, int offset, int whence)
    
    moveOffset = 0;
    
-   //check whence
+    //check whence
     if(whence == SEEK_CUR)
     {
         //check bounds for hiddeneBuf
@@ -363,10 +369,9 @@ int myseek(struct File *filePtr, int offset, int whence)
             filePtr->currPtr += offset;
             filePtr->bytesLeft -= offset;
         }
+        //out of bounds for hiddenbuf
         else
-        { 
-            //out of bounds for hiddenbuf
-
+        {
             //if we've written to the hiddenBuf, flush before moving kernel offset
             if(filePtr->haveWritten == 1)
             {
