@@ -10,7 +10,8 @@ struct File
     char *currPtr;
     char hiddenBuf[BUFF_SIZE];
     int flags;
-    int bytesLeft;
+    int bytesLeftToRead;
+    int bytesLeftToWrite;
     int fileOffset;
     int haveWritten; //to hiddenBuf
     int haveRead; //to hiddenBuf
