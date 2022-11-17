@@ -76,7 +76,10 @@ int myread(struct File *filePtr, char *buf, size_t count)
     
     userBytesRead = 0;
 
-    if(!(((filePtr->flags & O_RDONLY) == 0) || ((filePtr->flags & O_RDWR) != 0)))
+    // neither read write nor read only 
+    // not read write and not write only check that theyre turned off
+    // Check if it is just write only 
+    if((filePtr->flags & O_WRONLY) == 0) 
     {
         errno = EBADF;
         return -1;
