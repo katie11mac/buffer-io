@@ -413,11 +413,11 @@ void testWriteSeekRead()
     // printf("\tvalue of readFilePtr starting at %p: \'%s\'\n\n", readFilePtr->hiddenBuf, readFilePtr->hiddenBuf); 
 
     // TEST 3: Try writing again
-    // printf("TEST 3: WRITE \n"); 
-    // results = mywrite(readFilePtr, userWriteBuf + total, 5);
-    // total += results; 
-    // printf("\tbytes written: %d\n", results); 
-    // printf("\tvalue of readFilePtr starting at %p: \'%s\'\n\n", readFilePtr->hiddenBuf, readFilePtr->hiddenBuf); 
+    printf("TEST 3: WRITE \n"); 
+    results = mywrite(readFilePtr, userWriteBuf + total, 5);
+    total += results; 
+    printf("\tbytes written: %d\n", results); 
+    printf("\tvalue of readFilePtr starting at %p: \'%s\'\n\n", readFilePtr->hiddenBuf, readFilePtr->hiddenBuf); 
 
 
     // Close the testfile 
