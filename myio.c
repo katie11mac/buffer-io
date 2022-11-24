@@ -78,11 +78,11 @@ int myread(struct File *filePtr, char *buf, size_t count)
 
     // neither read write nor read only 
     // not read write and not write only check that theyre turned off
-    // Check if it is just write only 
+    // Check if it is just write only (does this come with assumptions tho?)
     if((filePtr->flags & O_WRONLY) != 0) 
     {
         errno = EBADF;
-        printf("HERE\n");
+        printf("NOT ALLOWED TO READ\n");
         return -1;
     }
 
@@ -92,13 +92,11 @@ int myread(struct File *filePtr, char *buf, size_t count)
         //if our count is bigger than hiddenBuff do a syscall right away to user buff (buf)
         if(count >= BUFF_SIZE)
         {
-            bytesRead = read(filePtr->fd, buf, count);
-            filePtr->fileOffset += count;
-
-            if(bytesRead == -1)
+            if((bytesRead = read(filePtr->fd, buf, count)) == -1)
             {
                 return -1;
             }
+            filePtr->fileOffset += count; // shouldn't we be incrementing by bytesRead instead
             userBytesRead = bytesRead;
             //reset currPtr after each new read
             filePtr->currPtr = filePtr->hiddenBuf;
@@ -106,9 +104,7 @@ int myread(struct File *filePtr, char *buf, size_t count)
         //if count is smaller than readBuf, fill readBuf then give bytes to user
         else
         {
-            bytesRead = read(filePtr->fd, filePtr->hiddenBuf, BUFF_SIZE);
-
-            if(bytesRead == -1)
+            if((bytesRead = read(filePtr->fd, filePtr->hiddenBuf, BUFF_SIZE)) == -1)
             {
                 return -1;
             }
@@ -180,9 +176,8 @@ int myread(struct File *filePtr, char *buf, size_t count)
                 {
                     myflush(filePtr);
                 }
-                bytesRead = read(filePtr->fd, buf+filePtr->bytesLeftToRead, count);
 
-                if(bytesRead == -1)
+                if((bytesRead = read(filePtr->fd, buf+filePtr->bytesLeftToRead, count)) == -1)
                 {
                     return -1;
                 }
@@ -202,9 +197,7 @@ int myread(struct File *filePtr, char *buf, size_t count)
                 }
 
                 //read from offset
-                bytesRead = read(filePtr->fd, filePtr->hiddenBuf, BUFF_SIZE);
-
-                if(bytesRead == -1)
+                if((bytesRead = read(filePtr->fd, filePtr->hiddenBuf, BUFF_SIZE)) == -1)
                 {
                     return -1;
                 }
@@ -292,13 +285,13 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
             //if count is still greater than or equal to BUFF_SIZE, syscall straight to file
             if (count >= BUFF_SIZE)
             {
-                bytesWritten = write(filePtr->fd, buf + filePtr->bytesLeftToWrite, count);
-                filePtr->fileOffset += count;
 
-                if(bytesWritten == -1)
+                if((bytesWritten = write(filePtr->fd, buf + filePtr->bytesLeftToWrite, count)) == -1)
                 {
                     return -1;
                 }
+
+                filePtr->fileOffset += count;
             }
             //if count is now smaller than BUFF_SIZE, memcopy to buf
             else
@@ -319,13 +312,13 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
     else
     {
         myflush(filePtr);
-        bytesWritten = write(filePtr->fd, buf, count);
-        filePtr->fileOffset += count;
-
-        if(bytesWritten == -1)
+    
+        if((bytesWritten = write(filePtr->fd, buf, count)) == -1)
         {
             return -1;
         }
+
+        filePtr->fileOffset += count;
 
         return bytesWritten;
     }
@@ -355,9 +348,9 @@ int myflush(struct File *filePtr)
 
     printf("kernel's file offset = %ld\n", lseek(filePtr->fd, 0, SEEK_CUR));
     //this writes to the file and moves kernel offset back forwards
-    bytesWritten = write(filePtr->fd, filePtr->hiddenBuf, filePtr->currPtr - filePtr->hiddenBuf);
+    
 
-    if(bytesWritten == -1)
+    if((bytesWritten = write(filePtr->fd, filePtr->hiddenBuf, filePtr->currPtr - filePtr->hiddenBuf)) == -1)
     {
         return -1;
     }
