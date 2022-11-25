@@ -92,18 +92,32 @@ int myread(struct File *filePtr, char *buf, size_t count)
         //if our count is bigger than hiddenBuff do a syscall right away to user buff (buf)
         if(count >= BUFF_SIZE)
         {
+
+            //if we have written already need to flush! (originally not here)
+            // if(filePtr->haveWritten == 1)
+            // {
+            //     myflush(filePtr);
+            // }
+
             if((bytesRead = read(filePtr->fd, buf, count)) == -1)
             {
                 return -1;
             }
             filePtr->fileOffset += bytesRead; // originally += count, but shouldn't it be += bytesRead in case can't read all of count?
-            userBytesRead = bytesRead;
+            userBytesRead += bytesRead;
             //reset currPtr after each new read
             filePtr->currPtr = filePtr->hiddenBuf;
         }
         //if count is smaller than readBuf, fill readBuf then give bytes to user
         else
         {
+
+            //if we have written already need to flush! (originally not here)
+            // if(filePtr->haveWritten == 1)
+            // {
+            //     myflush(filePtr);
+            // }
+
             if((bytesRead = read(filePtr->fd, filePtr->hiddenBuf, BUFF_SIZE)) == -1)
             {
                 return -1;
@@ -114,20 +128,7 @@ int myread(struct File *filePtr, char *buf, size_t count)
             filePtr->currPtr = filePtr->hiddenBuf;
             filePtr->haveRead = 1;
 
-            //if bytesRead is less than count, give user bytesRead
-            if(bytesRead < count)
-            {
-                memcpy(buf, filePtr->hiddenBuf, bytesRead);
-                updateFilePtrFields(filePtr, bytesRead, bytesRead, -(filePtr->bytesLeftToRead));
-                userBytesRead = bytesRead;
-            }
-            //if bytesRead is greater than/equal to count, give user count
-            else
-            {
-                memcpy(buf, filePtr->hiddenBuf, count);
-                updateFilePtrFields(filePtr, count, count, -count);
-                userBytesRead = count;
-            }
+            userBytesRead += myReadMemcpy(buf, filePtr->hiddenBuf, filePtr, bytesRead, count);
         }
     }
     //second case: when readBuf isn't empty
@@ -211,25 +212,34 @@ int myread(struct File *filePtr, char *buf, size_t count)
                 filePtr->currPtr = filePtr->hiddenBuf;
                 filePtr->haveRead = 1;
 
-                //if bytesRead is less than count, give user bytesRead
-                if(bytesRead < count)
-                {
-                    memcpy(buf+userBytesRead, filePtr->currPtr, bytesRead);
-                    updateFilePtrFields(filePtr, bytesRead, bytesRead, -(filePtr->bytesLeftToRead));
-                    userBytesRead += bytesRead;
-                }
-                //if bytesRead is greater than/equal to count, give user count
-                else
-                {
-                    memcpy(buf+userBytesRead, filePtr->currPtr, count);
-                    updateFilePtrFields(filePtr, count, count, -(count));
-                    userBytesRead += count;
-                }
+                userBytesRead += myReadMemcpy(buf+userBytesRead, filePtr->currPtr, filePtr, bytesRead, count);
             }
         }
     }
     
     return userBytesRead;
+}
+
+
+/*
+*
+*/
+int myReadMemcpy(char *buf, void *src, struct File *filePtr, int bytesRead, int count)
+{
+    //if bytesRead is less than count, give user bytesRead
+    if(bytesRead < count)
+    {
+        memcpy(buf, src, bytesRead);
+        updateFilePtrFields(filePtr, bytesRead, bytesRead, -(filePtr->bytesLeftToRead));
+        return bytesRead;
+    }
+    //if bytesRead is greater than/equal to count, give user count
+    else
+    {
+        memcpy(buf, src, count);
+        updateFilePtrFields(filePtr, count, count, -count);
+        return count;
+    }
 }
 
 /*
@@ -263,7 +273,7 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
 
     // if count is smaller than hiddenBuf we write to hiddenBuf until full
     if(count < BUFF_SIZE)
-    {    
+    {   
         // Case when count is less than size left in our hiddenBuf
         if(count <= filePtr->bytesLeftToWrite)
         {

@@ -20,6 +20,7 @@ struct File
 struct File * myopen(const char *pathname, int flags);
 int myclose(struct File *filePtr);
 int myread(struct File *filePtr, char *buf, size_t count);
+int myReadMemcpy(char *buf, void *src, struct File *filePtr, int bytesRead, int count);
 void updateFilePtrFields(struct File *filePtr, int incrementOffset, int incrementCurrPtr, int incrementBytesLeft);
 int mywrite(struct File *filePtr, char *buf, size_t count); 
 int myflush(struct File *filePtr);
