@@ -92,13 +92,7 @@ int myread(struct File *filePtr, char *buf, size_t count)
         //if our count is bigger than hiddenBuff do a syscall right away to user buff (buf)
         if(count >= BUFF_SIZE)
         {
-
-            //if we have written already need to flush! (originally not here)
-            // if(filePtr->haveWritten == 1)
-            // {
-            //     myflush(filePtr);
-            // }
-
+            
             if((bytesRead = read(filePtr->fd, buf, count)) == -1)
             {
                 return -1;
@@ -112,12 +106,6 @@ int myread(struct File *filePtr, char *buf, size_t count)
         else
         {
 
-            //if we have written already need to flush! (originally not here)
-            // if(filePtr->haveWritten == 1)
-            // {
-            //     myflush(filePtr);
-            // }
-
             if((bytesRead = read(filePtr->fd, filePtr->hiddenBuf, BUFF_SIZE)) == -1)
             {
                 return -1;
@@ -129,6 +117,7 @@ int myread(struct File *filePtr, char *buf, size_t count)
             filePtr->haveRead = 1;
 
             userBytesRead += myReadMemcpy(buf, filePtr->hiddenBuf, filePtr, bytesRead, count);
+            
         }
     }
     //second case: when readBuf isn't empty
