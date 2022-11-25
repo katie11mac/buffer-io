@@ -157,7 +157,7 @@ int myread(struct File *filePtr, char *buf, size_t count)
             memcpy(buf, filePtr->currPtr, count);
             updateFilePtrFields(filePtr, count, count, -(count));
             userBytesRead = count;
-            filePtr->haveRead = 1;
+            filePtr->haveRead = 1; // why is haveRead 1 here? if we are just reading from the hiddenBuf and not to it
         }
         //special case: when count is greater than or equal to the unread bytes in readBuf (bytesLeftToRead)
         else
@@ -169,7 +169,7 @@ int myread(struct File *filePtr, char *buf, size_t count)
             userBytesRead += filePtr->bytesLeftToRead;
             count -= filePtr->bytesLeftToRead;
             updateFilePtrFields(filePtr, filePtr->bytesLeftToRead, filePtr->bytesLeftToRead, -(filePtr->bytesLeftToRead)); // should third parameter be 0 or be -( -> bytesLeftToRead)
-            filePtr->haveRead = 1; // why is have read 1 here? 
+            filePtr->haveRead = 1; // why is haveRead 1 here? if we are just reading from the hiddenBuf and not to it
 
             //if count is still greater than BUFF_SIZE, syscall straight to buf
             if(count >= BUFF_SIZE)
