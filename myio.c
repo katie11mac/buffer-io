@@ -96,7 +96,7 @@ int myread(struct File *filePtr, char *buf, size_t count)
             {
                 return -1;
             }
-            filePtr->fileOffset += count; // shouldn't we be incrementing by bytesRead instead
+            filePtr->fileOffset += bytesRead; // originally += count, but shouldn't it be += bytesRead in case can't read all of count?
             userBytesRead = bytesRead;
             //reset currPtr after each new read
             filePtr->currPtr = filePtr->hiddenBuf;
@@ -133,6 +133,7 @@ int myread(struct File *filePtr, char *buf, size_t count)
     //second case: when readBuf isn't empty
     else
     {
+        //if did not previously read before
         if(filePtr->haveRead == 0)
         {
             //move forward the amount we've written to our buffer
@@ -149,7 +150,8 @@ int myread(struct File *filePtr, char *buf, size_t count)
             printf("bytes Left to read = %d\n", filePtr->bytesLeftToRead);
             filePtr->haveRead = 1;
         }
-       //normal case: when count is less than unread bytes in readBuf (bytesLeftToRead) 
+
+        //normal case: when count is less than unread bytes in readBuf (bytesLeftToRead) 
         if(count < filePtr->bytesLeftToRead)
         {
             memcpy(buf, filePtr->currPtr, count);
@@ -162,11 +164,12 @@ int myread(struct File *filePtr, char *buf, size_t count)
         {
             printf("SPECIAL CASE!!! \n");
 
+            //first, read the rest of what is in the hiddenBuf to the user
             memcpy(buf, filePtr->currPtr, filePtr->bytesLeftToRead);
-            updateFilePtrFields(filePtr, filePtr->bytesLeftToRead, filePtr->bytesLeftToRead, 0);
-            count -= filePtr->bytesLeftToRead;
             userBytesRead += filePtr->bytesLeftToRead;
-            filePtr->haveRead = 1;
+            count -= filePtr->bytesLeftToRead;
+            updateFilePtrFields(filePtr, filePtr->bytesLeftToRead, filePtr->bytesLeftToRead, -(filePtr->bytesLeftToRead)); // should third parameter be 0 or be -( -> bytesLeftToRead)
+            filePtr->haveRead = 1; // why is have read 1 here? 
 
             //if count is still greater than BUFF_SIZE, syscall straight to buf
             if(count >= BUFF_SIZE)
@@ -177,12 +180,12 @@ int myread(struct File *filePtr, char *buf, size_t count)
                     myflush(filePtr);
                 }
 
-                if((bytesRead = read(filePtr->fd, buf+filePtr->bytesLeftToRead, count)) == -1)
+                if((bytesRead = read(filePtr->fd, buf + userBytesRead, count)) == -1)
                 {
                     return -1;
                 }
 
-                filePtr->fileOffset += count;
+                filePtr->fileOffset += bytesRead; // originally += count, but what if it doesn't read all of count
                 userBytesRead += bytesRead;
                 //reset currPtr after each new read
                 filePtr->currPtr = filePtr->hiddenBuf;
@@ -196,7 +199,7 @@ int myread(struct File *filePtr, char *buf, size_t count)
                     myflush(filePtr);
                 }
 
-                //read from offset
+                //read from offset (refill hiddenBuf)
                 if((bytesRead = read(filePtr->fd, filePtr->hiddenBuf, BUFF_SIZE)) == -1)
                 {
                     return -1;
