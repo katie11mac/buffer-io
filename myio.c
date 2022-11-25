@@ -251,9 +251,10 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
 
     originalCount = count;
 
-    filePtr->bytesLeftToWrite = BUFF_SIZE - (filePtr->currPtr - filePtr->hiddenBuf); // need to initialize bytesLeftToWrite
+    filePtr->bytesLeftToWrite = BUFF_SIZE - (filePtr->currPtr - filePtr->hiddenBuf);
     printf("bytesLeftToWrite = %d\n", filePtr->bytesLeftToWrite);
 
+    // Check writing permissions
     if(!(((filePtr->flags & O_WRONLY) == 0) || ((filePtr->flags & O_RDWR) == 0)))
     {
         errno = EBADF;
@@ -266,6 +267,7 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
         // Case when count is less than size left in our hiddenBuf
         if(count <= filePtr->bytesLeftToWrite)
         {
+            // write count bytes to the hiddenBuf
             memcpy(filePtr->currPtr, buf, count);
             filePtr->fileOffset += count;
             filePtr->currPtr += count;
@@ -277,23 +279,24 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
         // Case when count is greater the size left in our hiddenBuf
         else
         {
+            // fill in the remaining of the hiddenBuf
             memcpy(filePtr->currPtr, buf, filePtr->bytesLeftToWrite);
             filePtr->fileOffset += filePtr->bytesLeftToWrite;
             filePtr->currPtr += filePtr->bytesLeftToWrite;
             filePtr->haveWritten = 1;
 
-            myflush(filePtr);
+            myflush(filePtr); //why are we flushing here?
 
             count -= filePtr->bytesLeftToWrite;
             //if count is still greater than or equal to BUFF_SIZE, syscall straight to file
             if (count >= BUFF_SIZE)
             {
-
                 if((bytesWritten = write(filePtr->fd, buf + filePtr->bytesLeftToWrite, count)) == -1)
                 {
                     return -1;
                 }
-
+                filePtr->bytesLeftToWrite -= filePtr->bytesLeftToWrite; //added this line
+                filePtr->bytesLeftToRead -= filePtr->bytesLeftToWrite; //added this line
                 filePtr->fileOffset += count;
             }
             //if count is now smaller than BUFF_SIZE, memcopy to buf
@@ -306,7 +309,6 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
                 filePtr->bytesLeftToWrite -= count;
                 filePtr->bytesLeftToRead -= count;
             }
-            
             count = 0;
         }
         return originalCount - count;
