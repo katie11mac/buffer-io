@@ -126,7 +126,7 @@ void testMyWrite()
 
     userWriteBuf = "If we see this, we wrote correctly!";
 
-    writeFilePtr = myopen("writefile", O_CREAT | O_RDWR);
+    writeFilePtr = myopen("writefile", O_CREAT | O_WRONLY);
 
     // TEST 1: Write an amount of bytes smaller than the BUFF_SIZE, which will not complete a syscall
     printf("TEST 1\n");
