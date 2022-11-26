@@ -2,11 +2,6 @@ Authors: Katie Macalintal and Lindsey Schweitzer
 
 Known Bugs: N/A
 
-Questions to Ask: 
-- RDONLY: Check if it is only write 
-- Intermingled read and writes: Change buffer size to be bigger (1024) and test reading/writing amounts that are smaller than buffer size (read 12 write 13 around 10 times)
-- Making the myread more concise: create functions and use differing arguments as paramenter (around 116-128 and 201-213)
-
 Resources: 
 https://www.tutorialspoint.com/cprogramming/c_structures.htm 
 https://www.educative.io/answers/resolving-the-expected-specifier-qualifier-list-before-error 
