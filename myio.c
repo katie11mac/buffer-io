@@ -283,6 +283,7 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
             filePtr->fileOffset += filePtr->bytesLeftToWrite;
             filePtr->currPtr += filePtr->bytesLeftToWrite;
             filePtr->haveWritten = 1;
+            filePtr->bytesLeftToRead -= filePtr->bytesLeftToWrite; //added this line
 
             myflush(filePtr); //why are we flushing here?
 
@@ -295,7 +296,6 @@ int mywrite(struct File *filePtr, char *buf, size_t count)
                     return -1;
                 }
                 filePtr->bytesLeftToWrite -= filePtr->bytesLeftToWrite; //added this line
-                filePtr->bytesLeftToRead -= filePtr->bytesLeftToWrite; //added this line
                 filePtr->fileOffset += count;
             }
             //if count is now smaller than BUFF_SIZE, memcopy to buf
@@ -343,7 +343,8 @@ int myflush(struct File *filePtr)
     {
         printf("kernels offset = %ld moving backward =  %ld\n", lseek(filePtr->fd, 0, SEEK_CUR), (filePtr->currPtr - filePtr->hiddenBuf) + filePtr->bytesLeftToRead);
         printf("filePtr->currPtr - filePtr->hiddenBuf: %ld\n", filePtr->currPtr - filePtr->hiddenBuf);
-        printf("filePtr->bytesLeftToRead: %d\n", filePtr->bytesLeftToRead);
+        printf("filePtr->bytesLeftToRead: %d\n", filePtr->bytesLeftToRead); 
+        // original second argument: -((filePtr->currPtr - filePtr->hiddenBuf) + filePtr->bytesLeftToRead)
         if(lseek(filePtr->fd, -((filePtr->currPtr - filePtr->hiddenBuf) + filePtr->bytesLeftToRead), SEEK_CUR) == -1)
         {
             return -1;
